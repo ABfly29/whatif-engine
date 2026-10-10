@@ -4,6 +4,10 @@ from decimal import Decimal
 from whatif_engine.domain.models import JobOffer, LivingCosts
 
 
+DEFAULT_SALARY_GROWTH = Decimal("0.091")
+DEFAULT_EXPENSE_INFLATION = Decimal("0.05")
+
+
 @dataclass(frozen=True)
 class MonthlyCashFlow:
     month: int
@@ -26,6 +30,8 @@ def project_cashflow(
     starting_savings: Decimal,
     horizon_months: int,
     one_time_costs: Decimal = Decimal("0"),
+    salary_growth_rate: Decimal = DEFAULT_SALARY_GROWTH,
+    expense_inflation_rate: Decimal = DEFAULT_EXPENSE_INFLATION,
 ) -> CashFlowProjection:
     if starting_savings < 0:
         raise ValueError("Starting savings cannot be negative.")
@@ -33,21 +39,32 @@ def project_cashflow(
         raise ValueError("Horizon must be greater than zero.")
     if one_time_costs < 0:
         raise ValueError("One-time costs cannot be negative.")
+    if not Decimal("-1") < salary_growth_rate <= Decimal("1"):
+        raise ValueError("Salary growth rate must be greater than -100% and at most 100%.")
+    if not Decimal("0") <= expense_inflation_rate <= Decimal("1"):
+        raise ValueError("Expense inflation must be between 0% and 100%.")
 
-    monthly_income = job.annual_take_home / Decimal("12")
-    monthly_expenses = living_costs.total_monthly
+    monthly_income_base = job.annual_take_home / Decimal("12")
+    monthly_expenses_base = living_costs.total_monthly
     balance = starting_savings
     months = []
 
     for month in range(1, horizon_months + 1):
+        completed_years = (month - 1) // 12
+        income = monthly_income_base * (
+            (Decimal("1") + salary_growth_rate) ** completed_years
+        )
+        expenses = monthly_expenses_base * (
+            (Decimal("1") + expense_inflation_rate) ** completed_years
+        )
         upfront = one_time_costs if month == 1 else Decimal("0")
-        balance += monthly_income - monthly_expenses - upfront
+        balance += income - expenses - upfront
 
         months.append(
             MonthlyCashFlow(
                 month=month,
-                income=monthly_income,
-                expenses=monthly_expenses,
+                income=income,
+                expenses=expenses,
                 one_time_costs=upfront,
                 ending_cash=balance,
             )
@@ -55,11 +72,7 @@ def project_cashflow(
 
     lowest = min(item.ending_cash for item in months)
     first_negative = next(
-        (
-            item.month
-            for item in months
-            if item.ending_cash < 0
-        ),
+        (item.month for item in months if item.ending_cash < 0),
         None,
     )
 
