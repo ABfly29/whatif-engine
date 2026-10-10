@@ -6,3 +6,8 @@ __pycache__/
 .streamlit/secrets.toml
 data/*
 !data/.gitkeep
+
+web/node_modules/
+web/dist/
+web/public/pyodide/
+web/public/engine/

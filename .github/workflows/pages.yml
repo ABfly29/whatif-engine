@@ -1,0 +1,83 @@
+name: Test and deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Python 3.14 matches the Python bundled with the Pyodide version used in
+      # the browser, so the tests exercise the same language version.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+
+      - name: Python tests
+        run: |
+          pip install -e ".[dev]"
+          pytest -q
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci
+
+      # Bundles the Python engine and downloads the checksum-verified Pyodide
+      # files, so the in-browser parity test runs for real.
+      - name: Prepare in-browser engine
+        working-directory: web
+        run: npm run prepare:engine
+
+      - name: Web checks
+        working-directory: web
+        run: |
+          npm run lint
+          npm run typecheck
+          npm test
+
+      - name: Build site
+        working-directory: web
+        env:
+          # Project pages are served from /<repo>/.
+          VITE_BASE: /${{ github.event.repository.name }}/
+        run: npm run build
+
+      - uses: actions/configure-pages@v5
+        if: github.event_name != 'pull_request'
+
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
+        with:
+          path: web/dist
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
