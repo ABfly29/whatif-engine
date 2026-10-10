@@ -12,7 +12,9 @@ class MonthlyCashFlow:
     month: int
     income: Decimal
     expenses: Decimal
-    one_time_costs: Decimal
+    relocation_costs: Decimal
+    lost_bonus: Decimal
+    joining_bonus: Decimal
     ending_cash: Decimal
 
 
@@ -42,7 +44,7 @@ def project_cashflow(
     if not 0 <= employment_gap_months <= horizon_months:
         raise ValueError("Employment gap must be within the projection horizon.")
     if min(one_time_costs, lost_bonus, joining_bonus) < 0:
-        raise ValueError("One-time costs and bonuses cannot be negative.")
+        raise ValueError("Costs and bonuses cannot be negative.")
     if not Decimal("-1") < salary_growth_rate <= Decimal("1"):
         raise ValueError("Salary growth must be greater than -100% and at most 100%.")
     if not Decimal("0") <= expense_inflation_rate <= Decimal("1"):
@@ -69,23 +71,24 @@ def project_cashflow(
             (Decimal("1") + expense_inflation_rate) ** completed_years
         )
 
-        upfront_cost = one_time_costs if month == 1 else Decimal("0")
-        forfeited_bonus = lost_bonus if month == 1 else Decimal("0")
-        joining_payment = (
+        relocation = one_time_costs if month == 1 else Decimal("0")
+        forfeited = lost_bonus if month == 1 else Decimal("0")
+        joining = (
             joining_bonus
             if month == employment_gap_months + 1
             else Decimal("0")
         )
 
-        total_one_time = upfront_cost + forfeited_bonus - joining_payment
-        balance += income - expenses - total_one_time
+        balance += income - expenses - relocation - forfeited + joining
 
         months.append(
             MonthlyCashFlow(
                 month=month,
                 income=income,
                 expenses=expenses,
-                one_time_costs=total_one_time,
+                relocation_costs=relocation,
+                lost_bonus=forfeited,
+                joining_bonus=joining,
                 ending_cash=balance,
             )
         )

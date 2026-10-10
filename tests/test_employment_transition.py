@@ -38,8 +38,12 @@ def test_lost_and_joining_bonuses():
         lost_bonus=Decimal("20000"),
         joining_bonus=Decimal("50000"),
     )
-    assert result.months[0].one_time_costs == Decimal("-30000")
-    assert result.months[1].one_time_costs == Decimal("0")
+
+    assert result.months[0].lost_bonus == Decimal("20000")
+    assert result.months[0].joining_bonus == Decimal("50000")
+    assert result.months[0].ending_cash == Decimal("210000")
+    assert result.months[1].lost_bonus == Decimal("0")
+    assert result.months[1].joining_bonus == Decimal("0")
 
 
 def test_gap_cannot_exceed_horizon():
@@ -49,4 +53,3 @@ def test_gap_cannot_exceed_horizon():
             job, costs, Decimal("100000"), 2,
             employment_gap_months=3,
         )
-
