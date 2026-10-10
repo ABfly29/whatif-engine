@@ -31,7 +31,7 @@ def project_cashflow(
     starting_savings: Decimal,
     horizon_months: int,
     one_time_costs: Decimal = Decimal("0"),
-    salary_growth_rate: Decimal = DEFAULT_SALARY_GROWTH,
+    salary_growth_rate: Decimal | None = None,
     expense_inflation_rate: Decimal = DEFAULT_EXPENSE_INFLATION,
     employment_gap_months: int = 0,
     lost_bonus: Decimal = Decimal("0"),
@@ -45,7 +45,14 @@ def project_cashflow(
         raise ValueError("Employment gap must be within the projection horizon.")
     if min(one_time_costs, lost_bonus, joining_bonus) < 0:
         raise ValueError("Costs and bonuses cannot be negative.")
-    if not Decimal("-1") < salary_growth_rate <= Decimal("1"):
+
+    growth_rate = (
+        job.annual_salary_growth_rate
+        if salary_growth_rate is None
+        else salary_growth_rate
+    )
+
+    if not Decimal("-1") < growth_rate <= Decimal("1"):
         raise ValueError("Salary growth must be greater than -100% and at most 100%.")
     if not Decimal("0") <= expense_inflation_rate <= Decimal("1"):
         raise ValueError("Expense inflation must be between 0% and 100%.")
@@ -62,7 +69,7 @@ def project_cashflow(
         if month > employment_gap_months:
             completed_years = employed_months // 12
             income = monthly_income_base * (
-                (Decimal("1") + salary_growth_rate) ** completed_years
+                (Decimal("1") + growth_rate) ** completed_years
             )
             employed_months += 1
 
@@ -93,14 +100,11 @@ def project_cashflow(
             )
         )
 
-    lowest = min(item.ending_cash for item in months)
-    first_negative = next(
-        (item.month for item in months if item.ending_cash < 0),
-        None,
-    )
-
     return CashFlowProjection(
         months=tuple(months),
-        lowest_ending_cash=lowest,
-        first_negative_month=first_negative,
+        lowest_ending_cash=min(item.ending_cash for item in months),
+        first_negative_month=next(
+            (item.month for item in months if item.ending_cash < 0),
+            None,
+        ),
     )

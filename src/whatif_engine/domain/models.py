@@ -6,7 +6,7 @@ from decimal import Decimal
 class JobOffer:
     annual_take_home: Decimal
     annual_bonus: Decimal = Decimal("0")
-    annual_salary_growth_rate: Decimal = Decimal("0")
+    annual_salary_growth_rate: Decimal = Decimal("0.091")
 
     def __post_init__(self) -> None:
         if self.annual_take_home < 0:
