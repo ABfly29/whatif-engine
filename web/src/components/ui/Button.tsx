@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { warmOnIntent } from "../../lib/warm";
 
 type Variant = "primary" | "ghost";
 
@@ -36,7 +37,7 @@ export function ButtonLink({
   children,
 }: Common & { to: string }) {
   return (
-    <Link to={to} className={cls(variant, small)}>
+    <Link to={to} className={cls(variant, small)} {...(to === "/app" ? warmOnIntent : {})}>
       {children}
       {arrow && <span className="arrow" aria-hidden="true">→</span>}
     </Link>

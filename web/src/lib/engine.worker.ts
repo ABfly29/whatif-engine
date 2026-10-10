@@ -12,15 +12,84 @@ export interface WorkerRequest {
 }
 export type WorkerResponse =
   | { id: number; out: string }
-  | { id: number; fatal: string };
+  | { id: number; fatal: string }
+  | { type: "progress"; loaded: number; total: number }
+  | { type: "ready" };
+
+/** Request kind that only makes sure the engine is loaded. */
+export const WARMUP = "__warmup";
 
 let ready: Promise<Handle> | null = null;
 
+const post = (message: WorkerResponse) => self.postMessage(message);
+
+interface Manifest {
+  files: { name: string; size: number; type: string }[];
+}
+
+/**
+ * Download the large runtime files ourselves so we can report real progress,
+ * then serve those exact bytes to Pyodide so nothing is downloaded twice.
+ * If the manifest is missing, Pyodide simply downloads normally (no progress).
+ */
+async function prefetch(base: URL): Promise<void> {
+  let manifest: Manifest;
+  try {
+    const res = await fetch(new URL("pyodide/manifest.json", base).href);
+    if (!res.ok) return;
+    manifest = (await res.json()) as Manifest;
+  } catch {
+    return;
+  }
+
+  const total = manifest.files.reduce((sum, f) => sum + f.size, 0);
+  let loaded = 0;
+  let lastPost = 0;
+  const report = (force = false) => {
+    const now = Date.now();
+    if (force || now - lastPost > 100) {
+      lastPost = now;
+      post({ type: "progress", loaded, total });
+    }
+  };
+  report(true);
+
+  const cache = new Map<string, { bytes: Blob; type: string }>();
+  await Promise.all(
+    manifest.files.map(async (file) => {
+      const url = new URL(`pyodide/${file.name}`, base).href;
+      const res = await fetch(url);
+      if (!res.ok || !res.body) throw new Error(`${file.name}: HTTP ${res.status}`);
+      const chunks: Uint8Array<ArrayBuffer>[] = [];
+      const reader = res.body.getReader();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value as Uint8Array<ArrayBuffer>);
+        loaded += value.length;
+        report();
+      }
+      cache.set(url, { bytes: new Blob(chunks), type: file.type });
+    }),
+  );
+  report(true);
+
+  // Serve prefetched files to Pyodide; anything else goes to the network.
+  const realFetch = self.fetch.bind(self);
+  self.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    const hit = cache.get(url);
+    return hit
+      ? Promise.resolve(new Response(hit.bytes, { headers: { "Content-Type": hit.type } }))
+      : realFetch(input, init);
+  }) as typeof fetch;
+}
+
 async function start(): Promise<Handle> {
   const base = new URL(import.meta.env.BASE_URL, self.location.href);
-  const indexURL = new URL("pyodide/", base).href;
+  await prefetch(base);
 
-  const pyodide = await loadPyodide({ indexURL });
+  const pyodide = await loadPyodide({ indexURL: new URL("pyodide/", base).href });
   await pyodide.loadPackage("pydantic");
 
   const zip = await fetch(new URL("engine/whatif_engine.zip", base).href);
@@ -28,9 +97,11 @@ async function start(): Promise<Handle> {
   pyodide.unpackArchive(await zip.arrayBuffer(), "zip", { extractDir: "/engine" });
   pyodide.runPython("import sys; sys.path.insert(0, '/engine')");
 
-  return pyodide.runPython(
+  const handle = pyodide.runPython(
     "from whatif_engine.api.service import handle\nhandle",
   ) as Handle;
+  post({ type: "ready" });
+  return handle;
 }
 
 self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
@@ -38,11 +109,10 @@ self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
   try {
     ready ??= start();
     const handle = await ready;
-    const response: WorkerResponse = { id, out: handle(kind, payload) };
-    self.postMessage(response);
+    const out = kind === WARMUP ? '{"ok":true,"data":null}' : handle(kind, payload);
+    post({ id, out });
   } catch (error) {
     ready = null; // allow a retry after a failed start
-    const response: WorkerResponse = { id, fatal: String(error) };
-    self.postMessage(response);
+    post({ id, fatal: String(error) });
   }
 };

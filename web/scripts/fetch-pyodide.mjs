@@ -69,4 +69,21 @@ for (const [name, pkg] of needed) {
   await writeFile(target, buf);
   console.log("ok");
 }
+// Manifest of the large files the browser downloads, with sizes, so the app
+// can show a real progress bar and know the total up front.
+const typeOf = (name) =>
+  name.endsWith(".wasm") ? "application/wasm"
+  : name.endsWith(".zip") ? "application/zip"
+  : "application/octet-stream";
+const manifestNames = [
+  "pyodide.asm.wasm",
+  "python_stdlib.zip",
+  ...[...needed.values()].map((p) => p.file_name),
+];
+const files = [];
+for (const name of manifestNames) {
+  files.push({ name, size: (await stat(join(outDir, name))).size, type: typeOf(name) });
+}
+await writeFile(join(outDir, "manifest.json"), JSON.stringify({ version, files }));
+
 console.log(`pyodide ${version}: ${needed.size} packages ready in public/pyodide`);

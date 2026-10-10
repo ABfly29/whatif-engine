@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
+import { warmOnIntent } from "../lib/warm";
 import { ScrollLink } from "./ScrollLink";
 import { ButtonLink } from "./ui/Button";
 
@@ -133,7 +134,7 @@ export default function Layout() {
               <ul>
                 <li><ScrollLink id="how">How it works</ScrollLink></li>
                 <li><ScrollLink id="compare">What you can compare</ScrollLink></li>
-                <li><Link to="/app">Calculator</Link></li>
+                <li><Link to="/app" {...warmOnIntent}>Calculator</Link></li>
               </ul>
             </div>
             <div className="site-footer__group">

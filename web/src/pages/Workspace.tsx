@@ -1,11 +1,13 @@
-import { useMemo, useState } from "react";
-import { careerSensitivity, compareCareer, usesBrowserEngine } from "../lib/api";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { careerSensitivity, compareCareer, warmCalculator } from "../lib/api";
+import { getEngineStatus, subscribeEngineStatus } from "../lib/engineClient";
 import { BLANK, SAMPLE, isSample, toRequest, type FormState } from "../lib/form";
 import { SECTION_FIELDS, validate, type SectionId } from "../lib/validation";
 import { useApiQuery } from "../lib/useApiQuery";
 import { Button } from "../components/ui/Button";
 import { Disclosure } from "../components/ui/Disclosure";
 import { Stepper, type Step } from "../components/ui/Stepper";
+import { EngineProgress } from "../components/workspace/EngineProgress";
 import { InputSections } from "../components/workspace/InputSections";
 import { ResultSummary } from "../components/workspace/ResultSummary";
 import { CashflowChart } from "../components/workspace/CashflowChart";
@@ -23,6 +25,8 @@ const LABELS: Record<SectionId, string> = {
 export default function Workspace() {
   const [form, setForm] = useState<FormState>(SAMPLE);
   const [sensitivityOpen, setSensitivityOpen] = useState(false);
+  const engine = useSyncExternalStore(subscribeEngineStatus, getEngineStatus);
+  useEffect(() => warmCalculator(), []);
 
   const errors = useMemo(() => validate(form), [form]);
   const hasErrors = Object.keys(errors).length > 0;
@@ -100,12 +104,11 @@ export default function Workspace() {
               {comparison.message}
             </p>
           )}
-          {comparison.status === "loading" && !result && (
-            <p className="muted">
-              Calculating…
-              {usesBrowserEngine() &&
-                " The first run loads the calculation engine, which can take a few seconds."}
-            </p>
+          {!result && !hasErrors && engine.phase === "loading" && (
+            <EngineProgress status={engine} />
+          )}
+          {!result && comparison.status === "loading" && engine.phase !== "loading" && (
+            <p className="muted">Calculating…</p>
           )}
 
           {result && request && (

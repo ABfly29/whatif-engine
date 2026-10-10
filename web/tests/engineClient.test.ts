@@ -3,7 +3,10 @@ import { FakeWorker } from "./fakeWorker";
 import {
   callEngine,
   EngineStartError,
+  getEngineStatus,
   resetEngineClient,
+  subscribeEngineStatus,
+  warmEngine,
 } from "../src/lib/engineClient";
 
 beforeEach(() => {
@@ -70,5 +73,50 @@ describe("engine client", () => {
     expect(crashed.terminated).toBe(true);
     void callEngine("compare", {}).catch(() => {});
     expect(FakeWorker.instances).toHaveLength(2);
+  });
+});
+
+describe("engine status and warm-up", () => {
+  it("starts idle, and warmEngine starts a single warm-up request", () => {
+    expect(getEngineStatus()).toEqual({ phase: "idle" });
+    warmEngine();
+    warmEngine();
+    expect(FakeWorker.instances).toHaveLength(1);
+    expect(last().posted).toHaveLength(1);
+    expect(last().posted[0].kind).toBe("__warmup");
+    expect(getEngineStatus()).toEqual({ phase: "loading", loaded: 0, total: 0 });
+  });
+
+  it("tracks progress and readiness and notifies subscribers", () => {
+    const seen: string[] = [];
+    subscribeEngineStatus(() => seen.push(getEngineStatus().phase));
+    warmEngine();
+    last().reply({ type: "progress", loaded: 100, total: 400 });
+    expect(getEngineStatus()).toEqual({ phase: "loading", loaded: 100, total: 400 });
+    last().reply({ type: "ready" });
+    expect(getEngineStatus()).toEqual({ phase: "ready" });
+    expect(seen).toContain("ready");
+  });
+
+  it("does not restart once ready", async () => {
+    warmEngine();
+    last().reply({ type: "ready" });
+    warmEngine();
+    expect(last().posted).toHaveLength(1);
+  });
+
+  it("marks an error, then allows warming again", () => {
+    warmEngine();
+    last().onerror?.();
+    expect(getEngineStatus()).toEqual({ phase: "error" });
+    warmEngine();
+    expect(FakeWorker.instances).toHaveLength(2);
+  });
+
+  it("becomes ready when a real request completes", async () => {
+    const promise = callEngine("compare", {});
+    last().reply({ id: last().posted[0].id, out: '{"ok":true,"data":1}' });
+    await promise;
+    expect(getEngineStatus()).toEqual({ phase: "ready" });
   });
 });

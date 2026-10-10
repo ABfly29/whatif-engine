@@ -1,4 +1,4 @@
-import { callEngine, EngineStartError } from "./engineClient";
+import { callEngine, EngineStartError, warmEngine } from "./engineClient";
 import type {
   CareerRequest,
   CareerResponse,
@@ -22,6 +22,11 @@ const BASE = "/api/v1";
  *  - "http": POST to the FastAPI server. Enable with VITE_ENGINE=http.
  */
 export const usesBrowserEngine = () => import.meta.env.VITE_ENGINE !== "http";
+
+/** Begin loading the browser engine early. A no-op in HTTP mode. */
+export const warmCalculator = () => {
+  if (usesBrowserEngine()) warmEngine();
+};
 
 /** FastAPI returns `detail` as a string (engine) or a list (schema validation). */
 function describe(detail: unknown): string {

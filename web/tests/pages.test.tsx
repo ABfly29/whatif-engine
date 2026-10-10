@@ -1,8 +1,10 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../src/App";
+import { resetEngineClient } from "../src/lib/engineClient";
+import { FakeWorker } from "./fakeWorker";
 import type { CareerResponse, SensitivityResponse } from "../src/lib/types";
 
 vi.mock("../src/lib/api", async (orig) => {
@@ -76,8 +78,16 @@ function renderAt(path: string) {
 const siteHeader = () => document.querySelector(".site-header") as HTMLElement;
 
 beforeEach(() => {
+  // The calculator warms the engine on mount; give it a fake worker.
+  FakeWorker.instances = [];
+  vi.stubGlobal("Worker", FakeWorker);
   vi.mocked(compareCareer).mockReset().mockResolvedValue(FIXTURE);
   vi.mocked(careerSensitivity).mockReset().mockResolvedValue(SENS);
+});
+
+afterEach(() => {
+  resetEngineClient();
+  vi.unstubAllGlobals();
 });
 
 describe("landing page", () => {
@@ -310,5 +320,55 @@ describe("decision workspace", () => {
     expect(
       await screen.findByRole("region", { name: /Sensitivity analysis/ }),
     ).toBeInTheDocument();
+  });
+});
+
+describe("engine warm-up and progress", () => {
+  it("starts loading the engine when someone hovers the calculator CTA, once", async () => {
+    const user = userEvent.setup();
+    renderAt("/");
+    expect(FakeWorker.instances).toHaveLength(0);
+    const cta = screen.getAllByRole("link", { name: "Run a comparison" })[0];
+    await user.hover(cta);
+    expect(FakeWorker.instances).toHaveLength(1);
+    expect(FakeWorker.last().posted[0].kind).toBe("__warmup");
+    await user.unhover(cta);
+    await user.hover(cta);
+    expect(FakeWorker.last().posted).toHaveLength(1);
+  });
+
+  it("also warms on keyboard focus", async () => {
+    const user = userEvent.setup();
+    renderAt("/");
+    await user.tab(); // skip link
+    const header = siteHeader();
+    within(header).getByRole("link", { name: "Try the calculator" }).focus();
+    expect(FakeWorker.last().posted[0].kind).toBe("__warmup");
+  });
+
+  it("does not load the engine just by viewing the landing page", () => {
+    renderAt("/");
+    expect(FakeWorker.instances).toHaveLength(0);
+  });
+
+  it("shows real download progress in the calculator, then the result", async () => {
+    vi.mocked(compareCareer).mockReturnValue(new Promise(() => {}));
+    renderAt("/app");
+    await waitFor(() => expect(FakeWorker.instances).toHaveLength(1));
+    FakeWorker.last().reply({ type: "progress", loaded: 5_242_880, total: 10_485_760 });
+    expect(await screen.findByText(/Loading the calculation engine/)).toBeInTheDocument();
+    expect(screen.getByText(/50% · 5\.0 of 10\.0 MB/)).toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).toHaveAttribute("value", "50");
+    FakeWorker.last().reply({ type: "ready" });
+    await waitFor(() =>
+      expect(screen.queryByText(/Loading the calculation engine/)).not.toBeInTheDocument(),
+    );
+  });
+
+  it("shows an indeterminate bar before the size is known", async () => {
+    vi.mocked(compareCareer).mockReturnValue(new Promise(() => {}));
+    renderAt("/app");
+    expect(await screen.findByText(/Loading the calculation engine/)).toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).not.toHaveAttribute("value");
   });
 });

@@ -26,8 +26,12 @@ the Python engine and downloads the checksum-verified Pyodide files into
 
 - `/` is the landing page and `/#/app` is the calculator. Hash routing is
   required for GitHub Pages.
-- The first calculation downloads about 14 MB (Pyodide plus pydantic). The
-  browser caches it afterwards.
+- The first calculation downloads about 13 MB (Pyodide plus pydantic). The
+  browser caches it afterwards. The app starts the download as soon as someone
+  hovers, focuses or touches a link to the calculator, and shows a real
+  progress bar. The worker downloads the large files itself (sizes come from
+  `public/pyodide/manifest.json`, written by `prepare:engine`) and hands the
+  same bytes to Pyodide, so nothing is fetched twice.
 
 ## Tests and checks
 
