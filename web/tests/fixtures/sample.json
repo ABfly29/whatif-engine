@@ -1,0 +1,543 @@
+{
+ "request": {
+  "current_job": {
+   "annual_take_home": "1200000",
+   "annual_salary_growth_rate": "0.091"
+  },
+  "new_job": {
+   "annual_take_home": "1600000",
+   "annual_salary_growth_rate": "0.091"
+  },
+  "current_costs": {
+   "rent": "20000",
+   "utilities": "3000",
+   "food": "8000",
+   "transport": "3000",
+   "other": "5000"
+  },
+  "new_costs": {
+   "rent": "25000",
+   "utilities": "3000",
+   "food": "8000",
+   "transport": "4000",
+   "other": "5000"
+  },
+  "starting_savings": "300000",
+  "horizon_months": 36,
+  "expense_inflation_rate": "0.05",
+  "employment_gap_months": 1,
+  "relocation_cost": "50000",
+  "lost_bonus": "40000",
+  "joining_bonus": "100000"
+ },
+ "result": {
+  "summary": {
+   "stay_ending_cash": "2762167.20",
+   "switch_ending_cash": "3698995.47",
+   "ending_cash_difference": "936828.27",
+   "break_even_month": 5,
+   "stay_lowest_cash": "361000.00",
+   "switch_lowest_cash": "165000.00",
+   "stay_first_negative_month": null,
+   "switch_first_negative_month": null
+  },
+  "months": [
+   {
+    "month": 1,
+    "stay_income": "100000.00",
+    "stay_expenses": "39000.00",
+    "stay_cash": "361000.00",
+    "switch_income": "0.00",
+    "switch_expenses": "45000.00",
+    "switch_cash": "165000.00",
+    "switch_relocation": "50000.00",
+    "switch_lost_bonus": "40000.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 2,
+    "stay_income": "100000.00",
+    "stay_expenses": "39000.00",
+    "stay_cash": "422000.00",
+    "switch_income": "133333.33",
+    "switch_expenses": "45000.00",
+    "switch_cash": "353333.33",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "100000.00"
+   },
+   {
+    "month": 3,
+    "stay_income": "100000.00",
+    "stay_expenses": "39000.00",
+    "stay_cash": "483000.00",
+    "switch_income": "133333.33",
+    "switch_expenses": "45000.00",
+    "switch_cash": "441666.67",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 4,
+    "stay_income": "100000.00",
+    "stay_expenses": "39000.00",
+    "stay_cash": "544000.00",
+    "switch_income": "133333.33",
+    "switch_expenses": "45000.00",
+    "switch_cash": "530000.00",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 5,
+    "stay_income": "100000.00",
+    "stay_expenses": "39000.00",
+    "stay_cash": "605000.00",
+    "switch_income": "133333.33",
+    "switch_expenses": "45000.00",
+    "switch_cash": "618333.33",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 6,
+    "stay_income": "100000.00",
+    "stay_expenses": "39000.00",
+    "stay_cash": "666000.00",
+    "switch_income": "133333.33",
+    "switch_expenses": "45000.00",
+    "switch_cash": "706666.67",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 7,
+    "stay_income": "100000.00",
+    "stay_expenses": "39000.00",
+    "stay_cash": "727000.00",
+    "switch_income": "133333.33",
+    "switch_expenses": "45000.00",
+    "switch_cash": "795000.00",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 8,
+    "stay_income": "100000.00",
+    "stay_expenses": "39000.00",
+    "stay_cash": "788000.00",
+    "switch_income": "133333.33",
+    "switch_expenses": "45000.00",
+    "switch_cash": "883333.33",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 9,
+    "stay_income": "100000.00",
+    "stay_expenses": "39000.00",
+    "stay_cash": "849000.00",
+    "switch_income": "133333.33",
+    "switch_expenses": "45000.00",
+    "switch_cash": "971666.67",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 10,
+    "stay_income": "100000.00",
+    "stay_expenses": "39000.00",
+    "stay_cash": "910000.00",
+    "switch_income": "133333.33",
+    "switch_expenses": "45000.00",
+    "switch_cash": "1060000.00",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 11,
+    "stay_income": "100000.00",
+    "stay_expenses": "39000.00",
+    "stay_cash": "971000.00",
+    "switch_income": "133333.33",
+    "switch_expenses": "45000.00",
+    "switch_cash": "1148333.33",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 12,
+    "stay_income": "100000.00",
+    "stay_expenses": "39000.00",
+    "stay_cash": "1032000.00",
+    "switch_income": "133333.33",
+    "switch_expenses": "45000.00",
+    "switch_cash": "1236666.67",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 13,
+    "stay_income": "109100.00",
+    "stay_expenses": "40950.00",
+    "stay_cash": "1100150.00",
+    "switch_income": "133333.33",
+    "switch_expenses": "47250.00",
+    "switch_cash": "1322750.00",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 14,
+    "stay_income": "109100.00",
+    "stay_expenses": "40950.00",
+    "stay_cash": "1168300.00",
+    "switch_income": "145466.67",
+    "switch_expenses": "47250.00",
+    "switch_cash": "1420966.67",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 15,
+    "stay_income": "109100.00",
+    "stay_expenses": "40950.00",
+    "stay_cash": "1236450.00",
+    "switch_income": "145466.67",
+    "switch_expenses": "47250.00",
+    "switch_cash": "1519183.33",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 16,
+    "stay_income": "109100.00",
+    "stay_expenses": "40950.00",
+    "stay_cash": "1304600.00",
+    "switch_income": "145466.67",
+    "switch_expenses": "47250.00",
+    "switch_cash": "1617400.00",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 17,
+    "stay_income": "109100.00",
+    "stay_expenses": "40950.00",
+    "stay_cash": "1372750.00",
+    "switch_income": "145466.67",
+    "switch_expenses": "47250.00",
+    "switch_cash": "1715616.67",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 18,
+    "stay_income": "109100.00",
+    "stay_expenses": "40950.00",
+    "stay_cash": "1440900.00",
+    "switch_income": "145466.67",
+    "switch_expenses": "47250.00",
+    "switch_cash": "1813833.33",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 19,
+    "stay_income": "109100.00",
+    "stay_expenses": "40950.00",
+    "stay_cash": "1509050.00",
+    "switch_income": "145466.67",
+    "switch_expenses": "47250.00",
+    "switch_cash": "1912050.00",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 20,
+    "stay_income": "109100.00",
+    "stay_expenses": "40950.00",
+    "stay_cash": "1577200.00",
+    "switch_income": "145466.67",
+    "switch_expenses": "47250.00",
+    "switch_cash": "2010266.67",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 21,
+    "stay_income": "109100.00",
+    "stay_expenses": "40950.00",
+    "stay_cash": "1645350.00",
+    "switch_income": "145466.67",
+    "switch_expenses": "47250.00",
+    "switch_cash": "2108483.33",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 22,
+    "stay_income": "109100.00",
+    "stay_expenses": "40950.00",
+    "stay_cash": "1713500.00",
+    "switch_income": "145466.67",
+    "switch_expenses": "47250.00",
+    "switch_cash": "2206700.00",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 23,
+    "stay_income": "109100.00",
+    "stay_expenses": "40950.00",
+    "stay_cash": "1781650.00",
+    "switch_income": "145466.67",
+    "switch_expenses": "47250.00",
+    "switch_cash": "2304916.67",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 24,
+    "stay_income": "109100.00",
+    "stay_expenses": "40950.00",
+    "stay_cash": "1849800.00",
+    "switch_income": "145466.67",
+    "switch_expenses": "47250.00",
+    "switch_cash": "2403133.33",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 25,
+    "stay_income": "119028.10",
+    "stay_expenses": "42997.50",
+    "stay_cash": "1925830.60",
+    "switch_income": "145466.67",
+    "switch_expenses": "49612.50",
+    "switch_cash": "2498987.50",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 26,
+    "stay_income": "119028.10",
+    "stay_expenses": "42997.50",
+    "stay_cash": "2001861.20",
+    "switch_income": "158704.13",
+    "switch_expenses": "49612.50",
+    "switch_cash": "2608079.13",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 27,
+    "stay_income": "119028.10",
+    "stay_expenses": "42997.50",
+    "stay_cash": "2077891.80",
+    "switch_income": "158704.13",
+    "switch_expenses": "49612.50",
+    "switch_cash": "2717170.77",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 28,
+    "stay_income": "119028.10",
+    "stay_expenses": "42997.50",
+    "stay_cash": "2153922.40",
+    "switch_income": "158704.13",
+    "switch_expenses": "49612.50",
+    "switch_cash": "2826262.40",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 29,
+    "stay_income": "119028.10",
+    "stay_expenses": "42997.50",
+    "stay_cash": "2229953.00",
+    "switch_income": "158704.13",
+    "switch_expenses": "49612.50",
+    "switch_cash": "2935354.03",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 30,
+    "stay_income": "119028.10",
+    "stay_expenses": "42997.50",
+    "stay_cash": "2305983.60",
+    "switch_income": "158704.13",
+    "switch_expenses": "49612.50",
+    "switch_cash": "3044445.67",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 31,
+    "stay_income": "119028.10",
+    "stay_expenses": "42997.50",
+    "stay_cash": "2382014.20",
+    "switch_income": "158704.13",
+    "switch_expenses": "49612.50",
+    "switch_cash": "3153537.30",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 32,
+    "stay_income": "119028.10",
+    "stay_expenses": "42997.50",
+    "stay_cash": "2458044.80",
+    "switch_income": "158704.13",
+    "switch_expenses": "49612.50",
+    "switch_cash": "3262628.93",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 33,
+    "stay_income": "119028.10",
+    "stay_expenses": "42997.50",
+    "stay_cash": "2534075.40",
+    "switch_income": "158704.13",
+    "switch_expenses": "49612.50",
+    "switch_cash": "3371720.57",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 34,
+    "stay_income": "119028.10",
+    "stay_expenses": "42997.50",
+    "stay_cash": "2610106.00",
+    "switch_income": "158704.13",
+    "switch_expenses": "49612.50",
+    "switch_cash": "3480812.20",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 35,
+    "stay_income": "119028.10",
+    "stay_expenses": "42997.50",
+    "stay_cash": "2686136.60",
+    "switch_income": "158704.13",
+    "switch_expenses": "49612.50",
+    "switch_cash": "3589903.83",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   },
+   {
+    "month": 36,
+    "stay_income": "119028.10",
+    "stay_expenses": "42997.50",
+    "stay_cash": "2762167.20",
+    "switch_income": "158704.13",
+    "switch_expenses": "49612.50",
+    "switch_cash": "3698995.47",
+    "switch_relocation": "0.00",
+    "switch_lost_bonus": "0.00",
+    "switch_joining_bonus": "0.00"
+   }
+  ],
+  "stay_annual": [
+   {
+    "year": 1,
+    "total_income": "1200000.00",
+    "total_expenses": "468000.00",
+    "relocation_costs": "0.00",
+    "lost_bonus": "0.00",
+    "joining_bonus": "0.00",
+    "net_savings": "732000.00",
+    "ending_cash": "1032000.00"
+   },
+   {
+    "year": 2,
+    "total_income": "1309200.00",
+    "total_expenses": "491400.00",
+    "relocation_costs": "0.00",
+    "lost_bonus": "0.00",
+    "joining_bonus": "0.00",
+    "net_savings": "817800.00",
+    "ending_cash": "1849800.00"
+   },
+   {
+    "year": 3,
+    "total_income": "1428337.20",
+    "total_expenses": "515970.00",
+    "relocation_costs": "0.00",
+    "lost_bonus": "0.00",
+    "joining_bonus": "0.00",
+    "net_savings": "912367.20",
+    "ending_cash": "2762167.20"
+   }
+  ],
+  "switch_annual": [
+   {
+    "year": 1,
+    "total_income": "1466666.67",
+    "total_expenses": "540000.00",
+    "relocation_costs": "50000.00",
+    "lost_bonus": "40000.00",
+    "joining_bonus": "100000.00",
+    "net_savings": "936666.67",
+    "ending_cash": "1236666.67"
+   },
+   {
+    "year": 2,
+    "total_income": "1733466.67",
+    "total_expenses": "567000.00",
+    "relocation_costs": "0.00",
+    "lost_bonus": "0.00",
+    "joining_bonus": "0.00",
+    "net_savings": "1166466.67",
+    "ending_cash": "2403133.33"
+   },
+   {
+    "year": 3,
+    "total_income": "1891212.13",
+    "total_expenses": "595350.00",
+    "relocation_costs": "0.00",
+    "lost_bonus": "0.00",
+    "joining_bonus": "0.00",
+    "net_savings": "1295862.13",
+    "ending_cash": "3698995.47"
+   }
+  ]
+ }
+}
