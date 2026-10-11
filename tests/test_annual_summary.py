@@ -1,8 +1,8 @@
 from decimal import Decimal
 
 from whatif_engine.domain.models import JobOffer, LivingCosts
-from whatif_engine.engine.cashflow import project_cashflow
 from whatif_engine.engine.annual_summary import summarize_annual_cashflow
+from whatif_engine.engine.cashflow import project_cashflow
 
 
 def test_annual_summary_matches_monthly_projection():

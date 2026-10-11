@@ -6,6 +6,7 @@ This module must not import FastAPI: it has to run inside Pyodide.
 """
 
 import json
+from dataclasses import asdict
 from decimal import ROUND_HALF_EVEN, Decimal
 
 from pydantic import ValidationError
@@ -14,6 +15,8 @@ from whatif_engine.api.schemas import (
     AnnualRow,
     CareerRequest,
     CareerResponse,
+    ExpenseRequest,
+    ExpenseResponse,
     MonthRow,
     SensitivityRequest,
     SensitivityResponse,
@@ -25,6 +28,7 @@ from whatif_engine.engine.decision import (
     compare_stay_vs_switch,
     run_decision_sensitivity,
 )
+from whatif_engine.engine.expense import ExpenseInputs, simulate_major_expense
 
 PAISE = Decimal("0.01")
 DEFAULT_GROWTH_GRID = (Decimal("0.05"), Decimal("0.12"))
@@ -155,7 +159,55 @@ def sensitivity(req: SensitivityRequest) -> SensitivityResponse:
     )
 
 
+_SHARE = Decimal("0.0001")
+
+
+def _round_tree(value, key: str = ""):
+    """Round every Decimal in a nested result to paise (shares to 0.01%)."""
+    if isinstance(value, Decimal):
+        return value.quantize(_SHARE if key == "purchase_share_of_surplus" else PAISE,
+                              rounding=ROUND_HALF_EVEN)
+    if isinstance(value, dict):
+        return {k: _round_tree(v, k) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_round_tree(v, key) for v in value]
+    return value
+
+
+def expense(req: ExpenseRequest) -> ExpenseResponse:
+    financed = req.payment_method == "loan"
+    result = simulate_major_expense(
+        ExpenseInputs(
+            monthly_take_home=req.monthly_take_home,
+            monthly_household_expenses=req.monthly_household_expenses,
+            liquid_savings=req.liquid_savings,
+            emergency_fund=req.emergency_fund,
+            purchase_price=req.purchase_price,
+            financed=financed,
+            down_payment=req.down_payment if financed else req.purchase_price,
+            loan_annual_rate=req.loan_annual_rate,
+            loan_tenure_months=req.loan_tenure_months,
+            fuel=req.fuel,
+            servicing=req.servicing,
+            parking_tolls=req.parking_tolls,
+            other_running=req.other_running,
+            annual_insurance=req.annual_insurance,
+            annual_salary_growth=req.annual_salary_growth,
+            expense_inflation=req.expense_inflation,
+            savings_return=req.savings_return,
+            annual_depreciation=req.annual_depreciation,
+            annual_price_increase=req.annual_price_increase,
+            delay_months=req.delay_months,
+            alternative_price=req.alternative_price,
+            alternative_running_share=req.alternative_running_share,
+            horizon_years=req.horizon_years,
+        )
+    )
+    return ExpenseResponse.model_validate(_round_tree(asdict(result)))
+
+
 _HANDLERS = {
+    "expense": (ExpenseRequest, expense),
     "compare": (CareerRequest, compare),
     "sensitivity": (SensitivityRequest, sensitivity),
 }

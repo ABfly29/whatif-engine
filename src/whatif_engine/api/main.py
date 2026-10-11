@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from whatif_engine.api.routes import career
+from whatif_engine.api.routes import career, expenses
 
 app = FastAPI(
     title="WhatIf Engine API",
@@ -31,3 +31,4 @@ def health() -> dict[str, str]:
 
 
 app.include_router(career.router, prefix="/api/v1")
+app.include_router(expenses.router, prefix="/api/v1")

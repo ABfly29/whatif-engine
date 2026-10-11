@@ -5,6 +5,7 @@ import Landing from "./pages/Landing";
 
 // The calculator pulls in the chart library; keep it off the landing page.
 const Workspace = lazy(() => import("./pages/Workspace"));
+const Expenses = lazy(() => import("./pages/Expenses"));
 
 /** Remount when the link's query changes, so opening another shared link in the same tab loads it. */
 function WorkspaceRoute() {
@@ -22,6 +23,14 @@ export default function App() {
           element={
             <Suspense fallback={<p className="container muted">Loading…</p>}>
               <WorkspaceRoute />
+            </Suspense>
+          }
+        />
+        <Route
+          path="expenses"
+          element={
+            <Suspense fallback={<p className="container muted">Loading…</p>}>
+              <Expenses />
             </Suspense>
           }
         />

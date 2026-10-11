@@ -476,3 +476,59 @@ td[data-tone="negative"] {
     opacity: 0.6;
   }
 }
+
+/* ---------- Major expense simulator ---------- */
+.choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-5);
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.choice legend:not(.visually-hidden) {
+  width: 100%;
+  padding: 0;
+  margin-bottom: var(--s-2);
+}
+.choice label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 44px;
+  cursor: pointer;
+}
+.choice input {
+  accent-color: var(--accent);
+  width: 18px;
+  height: 18px;
+}
+.choice--inline {
+  margin-top: var(--s-2);
+}
+/* Let wide tables scroll inside their own box instead of widening the page. */
+.stack > * {
+  min-width: 0;
+}
+table.compare th:first-child {
+  white-space: normal;
+  min-width: 11rem;
+  font-weight: 500;
+}
+table.compare thead th {
+  white-space: normal;
+  vertical-align: bottom;
+}
+.glossary {
+  display: grid;
+  gap: var(--s-3);
+  margin: 0;
+}
+.glossary dt {
+  font-weight: 600;
+}
+.glossary dd {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}

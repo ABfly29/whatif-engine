@@ -18,11 +18,13 @@ const STEPS = [
   },
 ];
 
-const CATEGORIES: { title: string; body: string; available: boolean }[] = [
+const CATEGORIES: { title: string; body: string; available: boolean; to?: string; cta?: string }[] = [
   {
     title: "Career decisions",
     body: "Stay in your job or take a new offer. Include a gap between jobs, relocation costs, a bonus you give up and a joining bonus.",
     available: true,
+    to: "/app",
+    cta: "Open the calculator",
   },
   {
     title: "Relocating",
@@ -31,8 +33,10 @@ const CATEGORIES: { title: string; body: string; available: boolean }[] = [
   },
   {
     title: "Major expenses",
-    body: "See how a large purchase or commitment changes your cash over the years that follow.",
-    available: false,
+    body: "Buy a vehicle now, later, or a cheaper one. See the EMI, your monthly surplus, savings and net worth over 1, 3 or 5 years.",
+    available: true,
+    to: "/expenses",
+    cta: "Open the simulator",
   },
 ];
 
@@ -76,7 +80,7 @@ export default function Landing() {
             id="compare-h"
             eyebrow="What you can compare"
             title="Start with a career move"
-            lead="More decision types are planned. Only career decisions are available today."
+            lead="Career decisions and major expenses are available today. More decision types are planned."
           />
           <div className="cards">
             {CATEGORIES.map((c) => (
@@ -86,9 +90,9 @@ export default function Landing() {
                 </span>
                 <h3>{c.title}</h3>
                 <p className="muted">{c.body}</p>
-                {c.available && (
-                  <ButtonLink to="/app" variant="ghost" small arrow>
-                    Open the calculator
+                {c.available && c.to && (
+                  <ButtonLink to={c.to} variant="ghost" small arrow>
+                    {c.cta}
                   </ButtonLink>
                 )}
               </Card>

@@ -160,8 +160,10 @@ describe("landing page", () => {
     ]) {
       expect(screen.getByRole("heading", { name })).toBeInTheDocument();
     }
-    expect(screen.getAllByText("Coming soon")).toHaveLength(2);
-    expect(screen.getByText("Available")).toBeInTheDocument();
+    expect(screen.getAllByText("Coming soon")).toHaveLength(1);
+    expect(screen.getAllByText("Available")).toHaveLength(2);
+    expect(screen.getByRole("link", { name: /Open the simulator/ })).toHaveAttribute("href", "/expenses");
+    expect(screen.getByRole("link", { name: /Open the calculator/ })).toHaveAttribute("href", "/app");
   });
 
   it("states assumptions and limitations", () => {

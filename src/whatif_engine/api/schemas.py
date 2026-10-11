@@ -6,7 +6,7 @@ Rates are fractions: 0.091 means 9.1%.
 """
 
 from decimal import Decimal
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -118,3 +118,85 @@ class SensitivityRow(_Model):
 
 class SensitivityResponse(_Model):
     rows: list[SensitivityRow]
+
+
+# ---------- Major expense simulator ----------
+
+
+class ExpenseRequest(_Model):
+    monthly_take_home: Money
+    monthly_household_expenses: Money = Decimal("0")
+    liquid_savings: Money = Decimal("0")
+    emergency_fund: Money = Decimal("0")
+    purchase_price: Money
+    payment_method: Literal["cash", "loan"] = "loan"
+    down_payment: Money = Decimal("0")
+    loan_annual_rate: Rate = Decimal("0.09")
+    loan_tenure_months: int = Field(60, ge=1, le=240)
+    fuel: Money = Decimal("0")
+    servicing: Money = Decimal("0")
+    parking_tolls: Money = Decimal("0")
+    other_running: Money = Decimal("0")
+    annual_insurance: Money = Decimal("0")
+    annual_salary_growth: Rate = Decimal("0.06")
+    expense_inflation: Rate = Decimal("0.05")
+    savings_return: Rate = Decimal("0")
+    annual_depreciation: Rate = Decimal("0.15")
+    annual_price_increase: Rate = Decimal("0.05")
+    delay_months: int = Field(12, ge=1, le=36)
+    alternative_price: Money
+    alternative_running_share: Rate = Decimal("1")
+    horizon_years: Literal[1, 3, 5] = 3
+
+
+class ExpenseSnapshot(_Model):
+    year: int
+    month: int
+    liquid_savings: Decimal
+    loan_balance: Decimal
+    resale_value: Decimal
+    net_worth: Decimal
+    liquid_vs_baseline: Decimal
+    net_worth_vs_baseline: Decimal
+    interest_paid: Decimal
+    running_costs_paid: Decimal
+    depreciation: Decimal
+    ownership_cost: Decimal
+
+
+class ExpenseWarning(_Model):
+    code: str
+    month: int | None
+    amount: Decimal | None
+
+
+class ExpenseScenario(_Model):
+    key: str
+    purchase_month: int | None
+    price: Decimal
+    upfront_payment: Decimal
+    loan_principal: Decimal
+    emi: Decimal
+    total_interest: Decimal
+    total_loan_payments: Decimal
+    surplus_before: Decimal
+    surplus_after: Decimal
+    cash_after_upfront: Decimal
+    cover_months: Decimal | None
+    emergency_fund_shortfall: Decimal
+    purchase_share_of_surplus: Decimal | None
+    snapshots: list[ExpenseSnapshot]
+    warnings: list[ExpenseWarning]
+
+
+class ExpenseMonth(_Model):
+    month: int
+    liquid: dict[str, Decimal]
+    net_worth: dict[str, Decimal]
+
+
+class ExpenseResponse(_Model):
+    horizon_years: int
+    baseline: ExpenseScenario
+    scenarios: list[ExpenseScenario]
+    months: list[ExpenseMonth]

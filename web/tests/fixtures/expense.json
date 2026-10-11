@@ -1,0 +1,1196 @@
+{
+ "request": {
+  "monthly_take_home": "100000",
+  "monthly_household_expenses": "55000",
+  "liquid_savings": "600000",
+  "emergency_fund": "300000",
+  "purchase_price": "1000000",
+  "payment_method": "loan",
+  "down_payment": "200000",
+  "loan_annual_rate": "0.09",
+  "loan_tenure_months": 60,
+  "fuel": "6000",
+  "servicing": "1500",
+  "parking_tolls": "1000",
+  "other_running": "500",
+  "annual_insurance": "30000",
+  "annual_salary_growth": "0.06",
+  "expense_inflation": "0.05",
+  "savings_return": "0",
+  "annual_depreciation": "0.15",
+  "annual_price_increase": "0.05",
+  "delay_months": 12,
+  "alternative_price": "700000",
+  "alternative_running_share": "1",
+  "horizon_years": 3
+ },
+ "response": {
+  "horizon_years": 3,
+  "baseline": {
+   "key": "baseline",
+   "purchase_month": null,
+   "price": "0.00",
+   "upfront_payment": "0.00",
+   "loan_principal": "0.00",
+   "emi": "0.00",
+   "total_interest": "0.00",
+   "total_loan_payments": "0.00",
+   "surplus_before": "45000.00",
+   "surplus_after": "45000.00",
+   "cash_after_upfront": "600000.00",
+   "cover_months": "10.91",
+   "emergency_fund_shortfall": "0.00",
+   "purchase_share_of_surplus": null,
+   "snapshots": [
+    {
+     "year": 1,
+     "month": 12,
+     "liquid_savings": "1140000.00",
+     "loan_balance": "0.00",
+     "resale_value": "0.00",
+     "net_worth": "1140000.00",
+     "liquid_vs_baseline": "0.00",
+     "net_worth_vs_baseline": "0.00",
+     "interest_paid": "0.00",
+     "running_costs_paid": "0.00",
+     "depreciation": "0.00",
+     "ownership_cost": "0.00"
+    },
+    {
+     "year": 3,
+     "month": 36,
+     "liquid_savings": "2339670.00",
+     "loan_balance": "0.00",
+     "resale_value": "0.00",
+     "net_worth": "2339670.00",
+     "liquid_vs_baseline": "0.00",
+     "net_worth_vs_baseline": "0.00",
+     "interest_paid": "0.00",
+     "running_costs_paid": "0.00",
+     "depreciation": "0.00",
+     "ownership_cost": "0.00"
+    },
+    {
+     "year": 5,
+     "month": 60,
+     "liquid_savings": "3717594.93",
+     "loan_balance": "0.00",
+     "resale_value": "0.00",
+     "net_worth": "3717594.93",
+     "liquid_vs_baseline": "0.00",
+     "net_worth_vs_baseline": "0.00",
+     "interest_paid": "0.00",
+     "running_costs_paid": "0.00",
+     "depreciation": "0.00",
+     "ownership_cost": "0.00"
+    }
+   ],
+   "warnings": []
+  },
+  "scenarios": [
+   {
+    "key": "buy_now",
+    "purchase_month": 0,
+    "price": "1000000.00",
+    "upfront_payment": "200000.00",
+    "loan_principal": "800000.00",
+    "emi": "16606.68",
+    "total_interest": "196401.05",
+    "total_loan_payments": "996401.05",
+    "surplus_before": "45000.00",
+    "surplus_after": "16893.32",
+    "cash_after_upfront": "400000.00",
+    "cover_months": "4.81",
+    "emergency_fund_shortfall": "0.00",
+    "purchase_share_of_surplus": "0.6246",
+    "snapshots": [
+     {
+      "year": 1,
+      "month": 12,
+      "liquid_savings": "602719.79",
+      "loan_balance": "667335.98",
+      "resale_value": "850000.00",
+      "net_worth": "785383.81",
+      "liquid_vs_baseline": "-537280.21",
+      "net_worth_vs_baseline": "-354616.19",
+      "interest_paid": "66616.19",
+      "running_costs_paid": "138000.00",
+      "depreciation": "150000.00",
+      "ownership_cost": "354616.19"
+     },
+     {
+      "year": 3,
+      "month": 36,
+      "liquid_savings": "1106784.37",
+      "loan_balance": "363506.14",
+      "resale_value": "614125.00",
+      "net_worth": "1357403.23",
+      "liquid_vs_baseline": "-1232885.63",
+      "net_worth_vs_baseline": "-982266.77",
+      "interest_paid": "161346.77",
+      "running_costs_paid": "435045.00",
+      "depreciation": "385875.00",
+      "ownership_cost": "982266.77"
+     },
+     {
+      "year": 5,
+      "month": 60,
+      "liquid_savings": "1758656.76",
+      "loan_balance": "0.00",
+      "resale_value": "443705.31",
+      "net_worth": "2202362.08",
+      "liquid_vs_baseline": "-1958938.16",
+      "net_worth_vs_baseline": "-1515232.85",
+      "interest_paid": "196401.05",
+      "running_costs_paid": "762537.11",
+      "depreciation": "556294.69",
+      "ownership_cost": "1515232.85"
+     }
+    ],
+    "warnings": [
+     {
+      "code": "heavy_share",
+      "month": null,
+      "amount": "0.62"
+     }
+    ]
+   },
+   {
+    "key": "delay",
+    "purchase_month": 12,
+    "price": "1050000.00",
+    "upfront_payment": "210000.00",
+    "loan_principal": "840000.00",
+    "emi": "17437.02",
+    "total_interest": "206221.10",
+    "total_loan_payments": "1046221.10",
+    "surplus_before": "48250.00",
+    "surplus_after": "18737.98",
+    "cash_after_upfront": "930000.00",
+    "cover_months": "10.66",
+    "emergency_fund_shortfall": "0.00",
+    "purchase_share_of_surplus": "0.6116",
+    "snapshots": [
+     {
+      "year": 1,
+      "month": 12,
+      "liquid_savings": "930000.00",
+      "loan_balance": "840000.00",
+      "resale_value": "1050000.00",
+      "net_worth": "1140000.00",
+      "liquid_vs_baseline": "-210000.00",
+      "net_worth_vs_baseline": "0.00",
+      "interest_paid": "0.00",
+      "running_costs_paid": "0.00",
+      "depreciation": "0.00",
+      "ownership_cost": "0.00"
+     },
+     {
+      "year": 3,
+      "month": 36,
+      "liquid_savings": "1414136.56",
+      "loan_balance": "548338.52",
+      "resale_value": "758625.00",
+      "net_worth": "1624423.04",
+      "liquid_vs_baseline": "-925533.44",
+      "net_worth_vs_baseline": "-715246.96",
+      "interest_paid": "126826.96",
+      "running_costs_paid": "297045.00",
+      "depreciation": "291375.00",
+      "ownership_cost": "715246.96"
+     },
+     {
+      "year": 5,
+      "month": 60,
+      "liquid_savings": "2046080.93",
+      "loan_balance": "199390.78",
+      "resale_value": "548106.56",
+      "net_worth": "2394796.71",
+      "liquid_vs_baseline": "-1671514.00",
+      "net_worth_vs_baseline": "-1322798.22",
+      "interest_paid": "196367.67",
+      "running_costs_paid": "624537.11",
+      "depreciation": "501893.44",
+      "ownership_cost": "1322798.22"
+     }
+    ],
+    "warnings": [
+     {
+      "code": "heavy_share",
+      "month": null,
+      "amount": "0.61"
+     }
+    ]
+   },
+   {
+    "key": "cheaper",
+    "purchase_month": 0,
+    "price": "700000.00",
+    "upfront_payment": "140000.00",
+    "loan_principal": "560000.00",
+    "emi": "11624.68",
+    "total_interest": "137480.74",
+    "total_loan_payments": "697480.74",
+    "surplus_before": "45000.00",
+    "surplus_after": "21875.32",
+    "cash_after_upfront": "460000.00",
+    "cover_months": "5.89",
+    "emergency_fund_shortfall": "0.00",
+    "purchase_share_of_surplus": "0.5139",
+    "snapshots": [
+     {
+      "year": 1,
+      "month": 12,
+      "liquid_savings": "722503.85",
+      "loan_balance": "467135.19",
+      "resale_value": "595000.00",
+      "net_worth": "850368.67",
+      "liquid_vs_baseline": "-417496.15",
+      "net_worth_vs_baseline": "-289631.33",
+      "interest_paid": "46631.33",
+      "running_costs_paid": "138000.00",
+      "depreciation": "105000.00",
+      "ownership_cost": "289631.33"
+     },
+     {
+      "year": 3,
+      "month": 36,
+      "liquid_savings": "1346136.56",
+      "loan_balance": "254454.30",
+      "resale_value": "429887.50",
+      "net_worth": "1521569.76",
+      "liquid_vs_baseline": "-993533.44",
+      "net_worth_vs_baseline": "-818100.24",
+      "interest_paid": "112942.74",
+      "running_costs_paid": "435045.00",
+      "depreciation": "270112.50",
+      "ownership_cost": "818100.24"
+     },
+     {
+      "year": 5,
+      "month": 60,
+      "liquid_savings": "2117577.08",
+      "loan_balance": "0.00",
+      "resale_value": "310593.72",
+      "net_worth": "2428170.80",
+      "liquid_vs_baseline": "-1600017.85",
+      "net_worth_vs_baseline": "-1289424.13",
+      "interest_paid": "137480.74",
+      "running_costs_paid": "762537.11",
+      "depreciation": "389406.28",
+      "ownership_cost": "1289424.13"
+     }
+    ],
+    "warnings": [
+     {
+      "code": "heavy_share",
+      "month": null,
+      "amount": "0.51"
+     }
+    ]
+   }
+  ],
+  "months": [
+   {
+    "month": 1,
+    "liquid": {
+     "baseline": "645000.00",
+     "buy_now": "419393.32",
+     "delay": "645000.00",
+     "cheaper": "484375.32"
+    },
+    "net_worth": {
+     "baseline": "645000.00",
+     "buy_now": "616548.05",
+     "delay": "645000.00",
+     "cheaper": "622383.64"
+    }
+   },
+   {
+    "month": 2,
+    "liquid": {
+     "baseline": "690000.00",
+     "buy_now": "438786.63",
+     "delay": "690000.00",
+     "cheaper": "508750.64"
+    },
+    "net_worth": {
+     "baseline": "690000.00",
+     "buy_now": "633356.61",
+     "delay": "690000.00",
+     "cheaper": "644949.63"
+    }
+   },
+   {
+    "month": 3,
+    "liquid": {
+     "baseline": "735000.00",
+     "buy_now": "458179.95",
+     "delay": "735000.00",
+     "cheaper": "533125.96"
+    },
+    "net_worth": {
+     "baseline": "735000.00",
+     "buy_now": "650423.84",
+     "delay": "735000.00",
+     "cheaper": "667696.69"
+    }
+   },
+   {
+    "month": 4,
+    "liquid": {
+     "baseline": "780000.00",
+     "buy_now": "477573.26",
+     "delay": "780000.00",
+     "cheaper": "557501.28"
+    },
+    "net_worth": {
+     "baseline": "780000.00",
+     "buy_now": "667747.93",
+     "delay": "780000.00",
+     "cheaper": "690623.55"
+    }
+   },
+   {
+    "month": 5,
+    "liquid": {
+     "baseline": "825000.00",
+     "buy_now": "496966.58",
+     "delay": "825000.00",
+     "cheaper": "581876.61"
+    },
+    "net_worth": {
+     "baseline": "825000.00",
+     "buy_now": "685327.13",
+     "delay": "825000.00",
+     "cheaper": "713728.99"
+    }
+   },
+   {
+    "month": 6,
+    "liquid": {
+     "baseline": "870000.00",
+     "buy_now": "516359.89",
+     "delay": "870000.00",
+     "cheaper": "606251.93"
+    },
+    "net_worth": {
+     "baseline": "870000.00",
+     "buy_now": "703159.70",
+     "delay": "870000.00",
+     "cheaper": "737011.79"
+    }
+   },
+   {
+    "month": 7,
+    "liquid": {
+     "baseline": "915000.00",
+     "buy_now": "535753.21",
+     "delay": "915000.00",
+     "cheaper": "630627.25"
+    },
+    "net_worth": {
+     "baseline": "915000.00",
+     "buy_now": "721243.96",
+     "delay": "915000.00",
+     "cheaper": "760470.77"
+    }
+   },
+   {
+    "month": 8,
+    "liquid": {
+     "baseline": "960000.00",
+     "buy_now": "555146.53",
+     "delay": "960000.00",
+     "cheaper": "655002.57"
+    },
+    "net_worth": {
+     "baseline": "960000.00",
+     "buy_now": "739578.24",
+     "delay": "960000.00",
+     "cheaper": "784104.77"
+    }
+   },
+   {
+    "month": 9,
+    "liquid": {
+     "baseline": "1005000.00",
+     "buy_now": "574539.84",
+     "delay": "1005000.00",
+     "cheaper": "679377.89"
+    },
+    "net_worth": {
+     "baseline": "1005000.00",
+     "buy_now": "758160.94",
+     "delay": "1005000.00",
+     "cheaper": "807912.66"
+    }
+   },
+   {
+    "month": 10,
+    "liquid": {
+     "baseline": "1050000.00",
+     "buy_now": "593933.16",
+     "delay": "1050000.00",
+     "cheaper": "703753.21"
+    },
+    "net_worth": {
+     "baseline": "1050000.00",
+     "buy_now": "776990.46",
+     "delay": "1050000.00",
+     "cheaper": "831893.32"
+    }
+   },
+   {
+    "month": 11,
+    "liquid": {
+     "baseline": "1095000.00",
+     "buy_now": "613326.47",
+     "delay": "1095000.00",
+     "cheaper": "728128.53"
+    },
+    "net_worth": {
+     "baseline": "1095000.00",
+     "buy_now": "796065.26",
+     "delay": "1095000.00",
+     "cheaper": "856045.68"
+    }
+   },
+   {
+    "month": 12,
+    "liquid": {
+     "baseline": "1140000.00",
+     "buy_now": "602719.79",
+     "delay": "930000.00",
+     "cheaper": "722503.85"
+    },
+    "net_worth": {
+     "baseline": "1140000.00",
+     "buy_now": "785383.81",
+     "delay": "1140000.00",
+     "cheaper": "850368.67"
+    }
+   },
+   {
+    "month": 13,
+    "liquid": {
+     "baseline": "1188250.00",
+     "buy_now": "624913.11",
+     "delay": "951362.98",
+     "cheaper": "749679.17"
+    },
+    "net_worth": {
+     "baseline": "1188250.00",
+     "buy_now": "807744.63",
+     "delay": "1158375.46",
+     "cheaper": "877661.24"
+    }
+   },
+   {
+    "month": 14,
+    "liquid": {
+     "baseline": "1236500.00",
+     "buy_now": "647106.42",
+     "delay": "972725.96",
+     "cheaper": "776854.50"
+    },
+    "net_worth": {
+     "baseline": "1236500.00",
+     "buy_now": "830346.28",
+     "delay": "1177024.44",
+     "cheaper": "905122.40"
+    }
+   },
+   {
+    "month": 15,
+    "liquid": {
+     "baseline": "1284750.00",
+     "buy_now": "669299.74",
+     "delay": "994088.94",
+     "cheaper": "804029.82"
+    },
+    "net_worth": {
+     "baseline": "1284750.00",
+     "buy_now": "853187.34",
+     "delay": "1195945.03",
+     "cheaper": "932751.14"
+    }
+   },
+   {
+    "month": 16,
+    "liquid": {
+     "baseline": "1333000.00",
+     "buy_now": "691493.05",
+     "delay": "1015451.93",
+     "cheaper": "831205.14"
+    },
+    "net_worth": {
+     "baseline": "1333000.00",
+     "buy_now": "876266.42",
+     "delay": "1215135.33",
+     "cheaper": "960546.49"
+    }
+   },
+   {
+    "month": 17,
+    "liquid": {
+     "baseline": "1381250.00",
+     "buy_now": "713686.37",
+     "delay": "1036814.91",
+     "cheaper": "858380.46"
+    },
+    "net_worth": {
+     "baseline": "1381250.00",
+     "buy_now": "899582.17",
+     "delay": "1234593.48",
+     "cheaper": "988507.52"
+    }
+   },
+   {
+    "month": 18,
+    "liquid": {
+     "baseline": "1429500.00",
+     "buy_now": "735879.68",
+     "delay": "1058177.89",
+     "cheaper": "885555.78"
+    },
+    "net_worth": {
+     "baseline": "1429500.00",
+     "buy_now": "923133.28",
+     "delay": "1254317.68",
+     "cheaper": "1016633.30"
+    }
+   },
+   {
+    "month": 19,
+    "liquid": {
+     "baseline": "1477750.00",
+     "buy_now": "758073.00",
+     "delay": "1079540.87",
+     "cheaper": "912731.10"
+    },
+    "net_worth": {
+     "baseline": "1477750.00",
+     "buy_now": "946918.45",
+     "delay": "1274306.15",
+     "cheaper": "1044922.92"
+    }
+   },
+   {
+    "month": 20,
+    "liquid": {
+     "baseline": "1526000.00",
+     "buy_now": "780266.32",
+     "delay": "1100903.85",
+     "cheaper": "939906.42"
+    },
+    "net_worth": {
+     "baseline": "1526000.00",
+     "buy_now": "970936.43",
+     "delay": "1294557.16",
+     "cheaper": "1073375.50"
+    }
+   },
+   {
+    "month": 21,
+    "liquid": {
+     "baseline": "1574250.00",
+     "buy_now": "802459.63",
+     "delay": "1122266.83",
+     "cheaper": "967081.74"
+    },
+    "net_worth": {
+     "baseline": "1574250.00",
+     "buy_now": "995186.00",
+     "delay": "1315068.99",
+     "cheaper": "1101990.20"
+    }
+   },
+   {
+    "month": 22,
+    "liquid": {
+     "baseline": "1622500.00",
+     "buy_now": "824652.95",
+     "delay": "1143629.82",
+     "cheaper": "994257.06"
+    },
+    "net_worth": {
+     "baseline": "1622500.00",
+     "buy_now": "1019665.96",
+     "delay": "1335839.98",
+     "cheaper": "1130766.17"
+    }
+   },
+   {
+    "month": 23,
+    "liquid": {
+     "baseline": "1670750.00",
+     "buy_now": "846846.26",
+     "delay": "1164992.80",
+     "cheaper": "1021432.38"
+    },
+    "net_worth": {
+     "baseline": "1670750.00",
+     "buy_now": "1044375.14",
+     "delay": "1356868.52",
+     "cheaper": "1159702.60"
+    }
+   },
+   {
+    "month": 24,
+    "liquid": {
+     "baseline": "1719000.00",
+     "buy_now": "837539.58",
+     "delay": "1154855.78",
+     "cheaper": "1017107.71"
+    },
+    "net_worth": {
+     "baseline": "1719000.00",
+     "buy_now": "1037812.42",
+     "delay": "1346653.00",
+     "cheaper": "1157298.69"
+    }
+   },
+   {
+    "month": 25,
+    "liquid": {
+     "baseline": "1770722.50",
+     "buy_now": "862732.90",
+     "delay": "1179218.76",
+     "cheaper": "1047283.03"
+    },
+    "net_worth": {
+     "baseline": "1770722.50",
+     "buy_now": "1065976.68",
+     "delay": "1371191.87",
+     "cheaper": "1189553.68"
+    }
+   },
+   {
+    "month": 26,
+    "liquid": {
+     "baseline": "1822445.00",
+     "buy_now": "887926.21",
+     "delay": "1203581.74",
+     "cheaper": "1077458.35"
+    },
+    "net_worth": {
+     "baseline": "1822445.00",
+     "buy_now": "1094366.86",
+     "delay": "1395983.60",
+     "cheaper": "1221966.80"
+    }
+   },
+   {
+    "month": 27,
+    "liquid": {
+     "baseline": "1874167.50",
+     "buy_now": "913119.53",
+     "delay": "1227944.72",
+     "cheaper": "1107633.67"
+    },
+    "net_worth": {
+     "baseline": "1874167.50",
+     "buy_now": "1122981.91",
+     "delay": "1421026.71",
+     "cheaper": "1254537.34"
+    }
+   },
+   {
+    "month": 28,
+    "liquid": {
+     "baseline": "1925890.00",
+     "buy_now": "938312.84",
+     "delay": "1252307.71",
+     "cheaper": "1137808.99"
+    },
+    "net_worth": {
+     "baseline": "1925890.00",
+     "buy_now": "1151820.81",
+     "delay": "1446319.74",
+     "cheaper": "1287264.57"
+    }
+   },
+   {
+    "month": 29,
+    "liquid": {
+     "baseline": "1977612.50",
+     "buy_now": "963506.16",
+     "delay": "1276670.69",
+     "cheaper": "1167984.31"
+    },
+    "net_worth": {
+     "baseline": "1977612.50",
+     "buy_now": "1180882.58",
+     "delay": "1471861.28",
+     "cheaper": "1320147.81"
+    }
+   },
+   {
+    "month": 30,
+    "liquid": {
+     "baseline": "2029335.00",
+     "buy_now": "988699.47",
+     "delay": "1301033.67",
+     "cheaper": "1198159.63"
+    },
+    "net_worth": {
+     "baseline": "2029335.00",
+     "buy_now": "1210166.26",
+     "delay": "1497649.94",
+     "cheaper": "1353186.38"
+    }
+   },
+   {
+    "month": 31,
+    "liquid": {
+     "baseline": "2081057.50",
+     "buy_now": "1013892.79",
+     "delay": "1325396.65",
+     "cheaper": "1228334.95"
+    },
+    "net_worth": {
+     "baseline": "2081057.50",
+     "buy_now": "1239670.92",
+     "delay": "1523684.38",
+     "cheaper": "1386379.64"
+    }
+   },
+   {
+    "month": 32,
+    "liquid": {
+     "baseline": "2132780.00",
+     "buy_now": "1039086.11",
+     "delay": "1349759.63",
+     "cheaper": "1258510.27"
+    },
+    "net_worth": {
+     "baseline": "2132780.00",
+     "buy_now": "1269395.65",
+     "delay": "1549963.26",
+     "cheaper": "1419726.95"
+    }
+   },
+   {
+    "month": 33,
+    "liquid": {
+     "baseline": "2184502.50",
+     "buy_now": "1064279.42",
+     "delay": "1374122.61",
+     "cheaper": "1288685.60"
+    },
+    "net_worth": {
+     "baseline": "2184502.50",
+     "buy_now": "1299339.58",
+     "delay": "1576485.30",
+     "cheaper": "1453227.70"
+    }
+   },
+   {
+    "month": 34,
+    "liquid": {
+     "baseline": "2236225.00",
+     "buy_now": "1089472.74",
+     "delay": "1398485.60",
+     "cheaper": "1318860.92"
+    },
+    "net_worth": {
+     "baseline": "2236225.00",
+     "buy_now": "1329501.86",
+     "delay": "1603249.26",
+     "cheaper": "1486881.30"
+    }
+   },
+   {
+    "month": 35,
+    "liquid": {
+     "baseline": "2287947.50",
+     "buy_now": "1114666.05",
+     "delay": "1422848.58",
+     "cheaper": "1349036.24"
+    },
+    "net_worth": {
+     "baseline": "2287947.50",
+     "buy_now": "1359881.68",
+     "delay": "1630253.90",
+     "cheaper": "1520687.17"
+    }
+   },
+   {
+    "month": 36,
+    "liquid": {
+     "baseline": "2339670.00",
+     "buy_now": "1106784.37",
+     "delay": "1414136.56",
+     "cheaper": "1346136.56"
+    },
+    "net_worth": {
+     "baseline": "2339670.00",
+     "buy_now": "1357403.23",
+     "delay": "1624423.04",
+     "cheaper": "1521569.76"
+    }
+   },
+   {
+    "month": 37,
+    "liquid": {
+     "baseline": "2395102.22",
+     "buy_now": "1135191.29",
+     "delay": "1441713.14",
+     "cheaper": "1379525.48"
+    },
+    "net_worth": {
+     "baseline": "2395102.22",
+     "buy_now": "1391429.36",
+     "delay": "1655119.11",
+     "cheaper": "1558892.13"
+    }
+   },
+   {
+    "month": 38,
+    "liquid": {
+     "baseline": "2450534.45",
+     "buy_now": "1163598.20",
+     "delay": "1469289.72",
+     "cheaper": "1412914.40"
+    },
+    "net_worth": {
+     "baseline": "2450534.45",
+     "buy_now": "1425670.72",
+     "delay": "1686052.40",
+     "cheaper": "1596365.16"
+    }
+   },
+   {
+    "month": 39,
+    "liquid": {
+     "baseline": "2505966.68",
+     "buy_now": "1192005.12",
+     "delay": "1496866.30",
+     "cheaper": "1446303.32"
+    },
+    "net_worth": {
+     "baseline": "2505966.68",
+     "buy_now": "1460126.59",
+     "delay": "1717221.80",
+     "cheaper": "1633988.36"
+    }
+   },
+   {
+    "month": 40,
+    "liquid": {
+     "baseline": "2561398.90",
+     "buy_now": "1220412.03",
+     "delay": "1524442.89",
+     "cheaper": "1479692.24"
+    },
+    "net_worth": {
+     "baseline": "2561398.90",
+     "buy_now": "1494796.30",
+     "delay": "1748626.25",
+     "cheaper": "1671761.23"
+    }
+   },
+   {
+    "month": 41,
+    "liquid": {
+     "baseline": "2616831.12",
+     "buy_now": "1248818.95",
+     "delay": "1552019.47",
+     "cheaper": "1513081.16"
+    },
+    "net_worth": {
+     "baseline": "2616831.12",
+     "buy_now": "1529679.17",
+     "delay": "1780264.71",
+     "cheaper": "1709683.32"
+    }
+   },
+   {
+    "month": 42,
+    "liquid": {
+     "baseline": "2672263.35",
+     "buy_now": "1277225.86",
+     "delay": "1579596.05",
+     "cheaper": "1546470.09"
+    },
+    "net_worth": {
+     "baseline": "2672263.35",
+     "buy_now": "1564774.58",
+     "delay": "1812136.17",
+     "cheaper": "1747754.18"
+    }
+   },
+   {
+    "month": 43,
+    "liquid": {
+     "baseline": "2727695.58",
+     "buy_now": "1305632.78",
+     "delay": "1607172.63",
+     "cheaper": "1579859.01"
+    },
+    "net_worth": {
+     "baseline": "2727695.58",
+     "buy_now": "1600081.90",
+     "delay": "1844239.66",
+     "cheaper": "1785973.39"
+    }
+   },
+   {
+    "month": 44,
+    "liquid": {
+     "baseline": "2783127.80",
+     "buy_now": "1334039.70",
+     "delay": "1634749.21",
+     "cheaper": "1613247.93"
+    },
+    "net_worth": {
+     "baseline": "2783127.80",
+     "buy_now": "1635600.55",
+     "delay": "1876574.23",
+     "cheaper": "1824340.53"
+    }
+   },
+   {
+    "month": 45,
+    "liquid": {
+     "baseline": "2838560.02",
+     "buy_now": "1362446.61",
+     "delay": "1662325.79",
+     "cheaper": "1646636.85"
+    },
+    "net_worth": {
+     "baseline": "2838560.02",
+     "buy_now": "1671329.98",
+     "delay": "1909138.96",
+     "cheaper": "1862855.20"
+    }
+   },
+   {
+    "month": 46,
+    "liquid": {
+     "baseline": "2893992.25",
+     "buy_now": "1390853.53",
+     "delay": "1689902.37",
+     "cheaper": "1680025.77"
+    },
+    "net_worth": {
+     "baseline": "2893992.25",
+     "buy_now": "1707269.64",
+     "delay": "1941932.95",
+     "cheaper": "1901517.05"
+    }
+   },
+   {
+    "month": 47,
+    "liquid": {
+     "baseline": "2949424.48",
+     "buy_now": "1419260.44",
+     "delay": "1717478.96",
+     "cheaper": "1713414.69"
+    },
+    "net_worth": {
+     "baseline": "2949424.48",
+     "buy_now": "1743419.01",
+     "delay": "1974955.36",
+     "cheaper": "1940325.69"
+    }
+   },
+   {
+    "month": 48,
+    "liquid": {
+     "baseline": "3004856.70",
+     "buy_now": "1412938.61",
+     "delay": "1710326.79",
+     "cheaper": "1712074.86"
+    },
+    "net_worth": {
+     "baseline": "3004856.70",
+     "buy_now": "1745048.88",
+     "delay": "1973476.59",
+     "cheaper": "1944552.05"
+    }
+   },
+   {
+    "month": 49,
+    "liquid": {
+     "baseline": "3064251.55",
+     "buy_now": "1444787.22",
+     "delay": "1741345.07",
+     "cheaper": "1748905.48"
+    },
+    "net_worth": {
+     "baseline": "3064251.55",
+     "buy_now": "1785057.95",
+     "delay": "2010395.04",
+     "cheaper": "1987094.99"
+    }
+   },
+   {
+    "month": 50,
+    "liquid": {
+     "baseline": "3123646.40",
+     "buy_now": "1476635.83",
+     "delay": "1772363.34",
+     "cheaper": "1785736.10"
+    },
+    "net_worth": {
+     "baseline": "3123646.40",
+     "buy_now": "1825275.36",
+     "delay": "2047539.49",
+     "cheaper": "2029783.76"
+    }
+   },
+   {
+    "month": 51,
+    "liquid": {
+     "baseline": "3183041.26",
+     "buy_now": "1508484.44",
+     "delay": "1803381.62",
+     "cheaper": "1822566.71"
+    },
+    "net_worth": {
+     "baseline": "3183041.26",
+     "buy_now": "1865700.67",
+     "delay": "2084909.17",
+     "cheaper": "2072618.07"
+    }
+   },
+   {
+    "month": 52,
+    "liquid": {
+     "baseline": "3242436.11",
+     "buy_now": "1540333.06",
+     "delay": "1834399.90",
+     "cheaper": "1859397.33"
+    },
+    "net_worth": {
+     "baseline": "3242436.11",
+     "buy_now": "1906333.50",
+     "delay": "2122503.38",
+     "cheaper": "2115597.64"
+    }
+   },
+   {
+    "month": 53,
+    "liquid": {
+     "baseline": "3301830.96",
+     "buy_now": "1572181.67",
+     "delay": "1865418.18",
+     "cheaper": "1896227.95"
+    },
+    "net_worth": {
+     "baseline": "3301830.96",
+     "buy_now": "1947173.49",
+     "delay": "2160321.41",
+     "cheaper": "2158722.22"
+    }
+   },
+   {
+    "month": 54,
+    "liquid": {
+     "baseline": "3361225.81",
+     "buy_now": "1604030.28",
+     "delay": "1896436.45",
+     "cheaper": "1933058.56"
+    },
+    "net_worth": {
+     "baseline": "3361225.81",
+     "buy_now": "1988220.27",
+     "delay": "2198362.60",
+     "cheaper": "2201991.56"
+    }
+   },
+   {
+    "month": 55,
+    "liquid": {
+     "baseline": "3420620.67",
+     "buy_now": "1635878.89",
+     "delay": "1927454.73",
+     "cheaper": "1969889.18"
+    },
+    "net_worth": {
+     "baseline": "3420620.67",
+     "buy_now": "2029473.53",
+     "delay": "2236626.31",
+     "cheaper": "2245405.43"
+    }
+   },
+   {
+    "month": 56,
+    "liquid": {
+     "baseline": "3480015.52",
+     "buy_now": "1667727.50",
+     "delay": "1958473.01",
+     "cheaper": "2006719.80"
+    },
+    "net_worth": {
+     "baseline": "3480015.52",
+     "buy_now": "2070932.97",
+     "delay": "2275111.91",
+     "cheaper": "2288963.62"
+    }
+   },
+   {
+    "month": 57,
+    "liquid": {
+     "baseline": "3539410.37",
+     "buy_now": "1699576.12",
+     "delay": "1989491.29",
+     "cheaper": "2043550.42"
+    },
+    "net_worth": {
+     "baseline": "3539410.37",
+     "buy_now": "2112598.31",
+     "delay": "2313818.82",
+     "cheaper": "2332665.95"
+    }
+   },
+   {
+    "month": 58,
+    "liquid": {
+     "baseline": "3598805.22",
+     "buy_now": "1731424.73",
+     "delay": "2020509.56",
+     "cheaper": "2080381.03"
+    },
+    "net_worth": {
+     "baseline": "3598805.22",
+     "buy_now": "2154469.29",
+     "delay": "2352746.48",
+     "cheaper": "2376512.22"
+    }
+   },
+   {
+    "month": 59,
+    "liquid": {
+     "baseline": "3658200.07",
+     "buy_now": "1763273.34",
+     "delay": "2051527.84",
+     "cheaper": "2117211.65"
+    },
+    "net_worth": {
+     "baseline": "3658200.07",
+     "buy_now": "2196545.68",
+     "delay": "2391894.34",
+     "cheaper": "2420502.29"
+    }
+   },
+   {
+    "month": 60,
+    "liquid": {
+     "baseline": "3717594.93",
+     "buy_now": "1758656.76",
+     "delay": "2046080.93",
+     "cheaper": "2117577.08"
+    },
+    "net_worth": {
+     "baseline": "3717594.93",
+     "buy_now": "2202362.08",
+     "delay": "2394796.71",
+     "cheaper": "2428170.80"
+    }
+   }
+  ]
+ }
+}

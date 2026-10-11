@@ -10,7 +10,7 @@ interface Props {
   set: (key: keyof FormState, value: string) => void;
 }
 
-function Section({
+export function Section({
   id,
   step,
   title,

@@ -57,6 +57,46 @@ describe.skipIf(!have)("engine in Pyodide", () => {
     expect(out.data.switch_annual).toHaveLength(3);
   });
 
+  it("matches the native Python engine for the major expense simulator", () => {
+    const request = {
+      monthly_take_home: "100000",
+      monthly_household_expenses: "55000",
+      liquid_savings: "600000",
+      emergency_fund: "300000",
+      purchase_price: "1000000",
+      payment_method: "loan",
+      down_payment: "200000",
+      loan_annual_rate: "0.09",
+      loan_tenure_months: 60,
+      fuel: "6000",
+      servicing: "1500",
+      parking_tolls: "1000",
+      other_running: "500",
+      annual_insurance: "30000",
+      alternative_price: "700000",
+    };
+    const out = JSON.parse(handle("expense", JSON.stringify(request)));
+    expect(out.ok).toBe(true);
+    const [buyNow, delay, cheaper] = out.data.scenarios;
+    // Expected values from native Python (whatif_engine.api.service.handle).
+    expect(buyNow.emi).toBe("16606.68");
+    expect(buyNow.total_interest).toBe("196401.05");
+    expect(buyNow.surplus_after).toBe("16893.32");
+    expect(buyNow.snapshots[0].loan_balance).toBe("667335.98");
+    expect(buyNow.snapshots[0].net_worth_vs_baseline).toBe("-354616.19");
+    expect(delay.price).toBe("1050000.00");
+    expect(delay.emi).toBe("17437.02");
+    expect(cheaper.emi).toBe("11624.68");
+    expect(out.data.baseline.snapshots[0].liquid_savings).toBe("1140000.00");
+    expect(out.data.months).toHaveLength(60);
+  });
+
+  it("rejects an invalid expense request with the same shape of error", () => {
+    const out = JSON.parse(handle("expense", JSON.stringify({ purchase_price: "-1" })));
+    expect(out.ok).toBe(false);
+    expect(out.status).toBe(422);
+  });
+
   it("runs sensitivity", () => {
     const out = JSON.parse(handle("sensitivity", JSON.stringify(REQUEST)));
     expect(out.ok).toBe(true);

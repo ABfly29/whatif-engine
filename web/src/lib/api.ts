@@ -2,6 +2,8 @@ import { callEngine, EngineStartError, warmEngine } from "./engineClient";
 import type {
   CareerRequest,
   CareerResponse,
+  ExpenseRequest,
+  ExpenseResponse,
   SensitivityResponse,
 } from "./types";
 
@@ -98,13 +100,24 @@ async function postHttp<T>(path: string, body: unknown, signal?: AbortSignal): P
   return (await response.json()) as T;
 }
 
-const post = <T>(kind: "compare" | "sensitivity", body: unknown, signal?: AbortSignal) =>
+const post = <T>(
+  kind: "compare" | "sensitivity" | "expense",
+  body: unknown,
+  signal?: AbortSignal,
+) =>
   usesBrowserEngine()
     ? postBrowser<T>(kind, body, signal)
-    : postHttp<T>(`/career/${kind}`, body, signal);
+    : postHttp<T>(
+        kind === "expense" ? "/expenses/simulate" : `/career/${kind}`,
+        body,
+        signal,
+      );
 
 export const compareCareer = (req: CareerRequest, signal?: AbortSignal) =>
   post<CareerResponse>("compare", req, signal);
 
 export const careerSensitivity = (req: CareerRequest, signal?: AbortSignal) =>
   post<SensitivityResponse>("sensitivity", req, signal);
+
+export const simulateExpense = (req: ExpenseRequest, signal?: AbortSignal) =>
+  post<ExpenseResponse>("expense", req, signal);

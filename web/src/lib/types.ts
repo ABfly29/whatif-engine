@@ -84,3 +84,91 @@ export interface SensitivityRow {
 export interface SensitivityResponse {
   rows: SensitivityRow[];
 }
+
+// ---------- Major expense simulator (mirrors ExpenseRequest / ExpenseResponse) ----------
+
+export interface ExpenseRequest {
+  monthly_take_home: string;
+  monthly_household_expenses: string;
+  liquid_savings: string;
+  emergency_fund: string;
+  purchase_price: string;
+  payment_method: "cash" | "loan";
+  down_payment: string;
+  loan_annual_rate: string;
+  loan_tenure_months: number;
+  fuel: string;
+  servicing: string;
+  parking_tolls: string;
+  other_running: string;
+  annual_insurance: string;
+  annual_salary_growth: string;
+  expense_inflation: string;
+  savings_return: string;
+  annual_depreciation: string;
+  annual_price_increase: string;
+  delay_months: number;
+  alternative_price: string;
+  alternative_running_share: string;
+  horizon_years: 1 | 3 | 5;
+}
+
+export type ExpenseScenarioKey = "baseline" | "buy_now" | "delay" | "cheaper";
+
+export interface ExpenseSnapshot {
+  year: number;
+  month: number;
+  liquid_savings: string;
+  loan_balance: string;
+  resale_value: string;
+  net_worth: string;
+  liquid_vs_baseline: string;
+  net_worth_vs_baseline: string;
+  interest_paid: string;
+  running_costs_paid: string;
+  depreciation: string;
+  ownership_cost: string;
+}
+
+export interface ExpenseWarning {
+  code:
+    | "insufficient_savings"
+    | "below_emergency_fund"
+    | "negative_surplus"
+    | "heavy_share"
+    | "cash_negative";
+  month: number | null;
+  amount: string | null;
+}
+
+export interface ExpenseScenario {
+  key: ExpenseScenarioKey;
+  purchase_month: number | null;
+  price: string;
+  upfront_payment: string;
+  loan_principal: string;
+  emi: string;
+  total_interest: string;
+  total_loan_payments: string;
+  surplus_before: string;
+  surplus_after: string;
+  cash_after_upfront: string;
+  cover_months: string | null;
+  emergency_fund_shortfall: string;
+  purchase_share_of_surplus: string | null;
+  snapshots: ExpenseSnapshot[];
+  warnings: ExpenseWarning[];
+}
+
+export interface ExpenseMonth {
+  month: number;
+  liquid: Record<ExpenseScenarioKey, string>;
+  net_worth: Record<ExpenseScenarioKey, string>;
+}
+
+export interface ExpenseResponse {
+  horizon_years: 1 | 3 | 5;
+  baseline: ExpenseScenario;
+  scenarios: ExpenseScenario[];
+  months: ExpenseMonth[];
+}

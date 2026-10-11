@@ -25,8 +25,26 @@ export function inrCompact(value: number): string {
   return `${sign}₹${Math.round(abs)}`;
 }
 
-function trim(n: number): string {
-  return n.toFixed(1).replace(/\.0$/, "");
+/** Readable summary with lakhs and crores: ₹12.5 lakh, ₹1.25 crore. Under ₹1 lakh, the full figure. */
+export function inrWords(value: string | number): string {
+  const n = typeof value === "string" ? Number(value) : value;
+  if (!Number.isFinite(n)) return "—";
+  const abs = Math.abs(n);
+  const sign = Math.round(n) === 0 || n >= 0 ? "" : "−";
+  if (abs >= 1e7) return `${sign}₹${trim(abs / 1e7, 2)} crore`;
+  if (abs >= 1e5) return `${sign}₹${trim(abs / 1e5, 2)} lakh`;
+  return inr(n);
+}
+
+/** "4.8 months" / "1 month". */
+export function monthsLabel(value: string | number): string {
+  const n = Number(Number(value).toFixed(1));
+  return `${n} ${n === 1 ? "month" : "months"}`;
+}
+
+function trim(n: number, digits = 1) {
+  const text = n.toFixed(digits);
+  return text.includes(".") ? text.replace(/0+$/, "").replace(/\.$/, "") : text;
 }
 
 /** Fraction string from the API ("0.091") to a percent label ("9.1%"). */

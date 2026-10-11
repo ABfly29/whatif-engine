@@ -58,7 +58,7 @@ export default function Layout() {
 
   // The calculator is wider than the marketing pages; the header and footer
   // follow it so everything shares one left edge.
-  const wide = location.pathname === "/app";
+  const wide = location.pathname === "/app" || location.pathname === "/expenses";
 
   return (
     <div className={wide ? "layout layout--wide" : "layout"}>
@@ -139,6 +139,7 @@ export default function Layout() {
                 <li><ScrollLink id="how">How it works</ScrollLink></li>
                 <li><ScrollLink id="compare">What you can compare</ScrollLink></li>
                 <li><Link to="/app" {...warmOnIntent}>Calculator</Link></li>
+                <li><Link to="/expenses" {...warmOnIntent}>Major expense simulator</Link></li>
               </ul>
             </div>
             <div className="site-footer__group">
