@@ -3,7 +3,9 @@ import { useEffect, useState } from "react";
 export type QueryState<T> =
   | { status: "idle" }
   | { status: "loading"; previous?: T }
-  | { status: "success"; data: T }
+  // `key` identifies the inputs that produced `data`, so callers can tell whether
+  // it still matches what is on screen (it lags the form by the debounce delay).
+  | { status: "success"; data: T; key: string }
   | { status: "error"; message: string; previous?: T };
 
 const IDLE = { status: "idle" } as const;
@@ -31,7 +33,7 @@ export function useApiQuery<T>(
         previous: s.status === "success" ? s.data : "previous" in s ? s.previous : undefined,
       }));
       fetcher(controller.signal)
-        .then((data) => setState({ status: "success", data }))
+        .then((data) => setState({ status: "success", data, key }))
         .catch((error: Error) => {
           if (error.name === "AbortError") return;
           setState((s) => ({

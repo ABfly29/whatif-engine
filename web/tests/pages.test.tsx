@@ -13,6 +13,17 @@ vi.mock("../src/lib/api", async (orig) => {
 });
 import { careerSensitivity, compareCareer } from "../src/lib/api";
 
+// Plain functions so these tests can observe a click without generating a real PDF.
+let reportCalls: { request: { new_job: { annual_take_home: string } }; result: unknown }[] = [];
+vi.mock("../src/lib/report/download", async (orig) => ({
+  ...(await orig<typeof import("../src/lib/report/download")>()),
+  downloadReport: async (input: (typeof reportCalls)[number]) => {
+    reportCalls.push(input);
+    return "whatif-report-test.pdf";
+  },
+  warmReport: () => {},
+}));
+
 const annual = (year: number, income: string) => ({
   year,
   total_income: income,
@@ -78,6 +89,7 @@ function renderAt(path: string) {
 const siteHeader = () => document.querySelector(".site-header") as HTMLElement;
 
 beforeEach(() => {
+  reportCalls = [];
   // The calculator warms the engine on mount; give it a fake worker.
   FakeWorker.instances = [];
   vi.stubGlobal("Worker", FakeWorker);
@@ -441,5 +453,70 @@ describe("shareable links", () => {
     expect(await screen.findByText(/Starting the calculation engine/)).toBeInTheDocument();
     expect(screen.getByText(/Download complete/)).toBeInTheDocument();
     expect(screen.getByRole("progressbar")).not.toHaveAttribute("value");
+  });
+});
+
+describe("PDF report button in the calculator", () => {
+  const reportButton = () => screen.queryByRole("button", { name: "Download PDF Report" });
+
+  it("appears below the results after a successful calculation", async () => {
+    renderAt("/app");
+    const button = await screen.findByRole("button", { name: "Download PDF Report" });
+    // It sits after the headline numbers and chart, inside the results column.
+    const results = document.querySelector(".ws-results")!;
+    expect(results).toContainElement(button);
+    const verdict = screen.getByText(/better off/);
+    expect(verdict.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("is not shown before there is a result", async () => {
+    vi.mocked(compareCareer).mockReturnValue(new Promise(() => {}));
+    renderAt("/app");
+    await screen.findByText(/Downloading the calculation engine/);
+    expect(reportButton()).toBeNull();
+  });
+
+  it("is not shown when the inputs are invalid", async () => {
+    const user = userEvent.setup();
+    renderAt("/app");
+    await screen.findByRole("button", { name: "Download PDF Report" });
+    await user.click(screen.getByRole("button", { name: "Clear all" }));
+    await screen.findByText(/Fix the highlighted fields/);
+    expect(reportButton()).toBeNull();
+  });
+
+  it("is not shown when the calculation fails", async () => {
+    vi.mocked(compareCareer).mockRejectedValue(new Error("Could not reach the calculation service."));
+    renderAt("/app");
+    await screen.findByRole("alert");
+    expect(reportButton()).toBeNull();
+  });
+
+  it("hides while the shown result is out of date, and returns with the new one", async () => {
+    const user = userEvent.setup();
+    renderAt("/app");
+    await screen.findByRole("button", { name: "Download PDF Report" });
+    const pay = screen.getAllByLabelText("Annual take-home pay")[1];
+    await user.type(pay, "0");
+    // The old result is still on screen for the debounce delay, but it no longer
+    // matches the inputs, so a report built now would mix new inputs with old results.
+    expect(reportButton()).toBeNull();
+    expect(await screen.findByRole("button", { name: "Download PDF Report" })).toBeInTheDocument();
+  });
+
+  it("generates the report from the inputs on screen and the engine's result", async () => {
+    const user = userEvent.setup();
+    renderAt("/app");
+    const pay = (await screen.findAllByLabelText("Annual take-home pay"))[1];
+    await user.clear(pay);
+    await user.type(pay, "2100000");
+    await waitFor(() => expect(vi.mocked(compareCareer).mock.calls.at(-1)![0].new_job.annual_take_home).toBe("2100000"));
+    await user.click(await screen.findByRole("button", { name: "Download PDF Report" }));
+
+    await waitFor(() => expect(reportCalls).toHaveLength(1));
+    expect(reportCalls[0].request.new_job.annual_take_home).toBe("2100000");
+    // The very object the engine returned (the mocked engine resolves FIXTURE), not a copy.
+    expect(reportCalls[0].result).toBe(FIXTURE);
+    expect(await screen.findByText(/Downloaded whatif-report-test\.pdf/)).toBeInTheDocument();
   });
 });

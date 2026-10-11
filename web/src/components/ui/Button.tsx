@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { warmOnIntent } from "../../lib/warm";
 
@@ -20,7 +20,7 @@ export function Button({
   arrow,
   children,
   ...rest
-}: Common & ButtonHTMLAttributes<HTMLButtonElement>) {
+}: Common & ComponentProps<"button">) {
   return (
     <button type="button" className={cls(variant, small)} {...rest}>
       {children}

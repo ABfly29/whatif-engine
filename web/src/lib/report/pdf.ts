@@ -1,6 +1,6 @@
 import type { jsPDF } from "jspdf";
 import type { UserOptions } from "jspdf-autotable";
-import { buildReportModel, dateParts } from "./model";
+import { buildReportModel } from "./model";
 import type { ReportInput, ReportModel } from "./types";
 
 /**
@@ -61,6 +61,17 @@ function installBackground(doc: jsPDF) {
     return result;
   }) as jsPDF["addPage"];
   paintBackground(doc);
+}
+
+/** Load the PDF libraries and fonts ahead of time. Safe to call repeatedly. */
+export function preloadReportAssets(): Promise<unknown> {
+  return Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+    import("./fonts/NotoSerif-Regular"),
+    import("./fonts/NotoSans-Regular"),
+    import("./fonts/NotoSans-Bold"),
+  ]);
 }
 
 async function registerFonts(doc: jsPDF) {
@@ -397,7 +408,4 @@ export async function generateReportBlob(input: ReportInput, options?: ReportOpt
   return (await generateReportPdf(input, options)).output("blob");
 }
 
-/** e.g. whatif-report-2026-10-11.pdf */
-export function reportFileName(input: Pick<ReportInput, "generatedAt"> = {}): string {
-  return `whatif-report-${dateParts(input.generatedAt ?? new Date()).iso}.pdf`;
-}
+export { reportFileName } from "./filename";

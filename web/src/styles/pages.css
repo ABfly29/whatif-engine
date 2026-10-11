@@ -337,3 +337,134 @@ td[data-tone="negative"] {
 .engine-progress__slow {
   color: var(--text);
 }
+
+/* ---------- PDF report: download card and overlay ---------- */
+.report-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4) var(--s-5);
+  flex-wrap: wrap;
+  padding: var(--s-4) var(--s-5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.report-card h3 {
+  font-size: var(--text-lg);
+}
+.report-card__status {
+  flex-basis: 100%;
+  margin: 0;
+  min-height: 1.2em;
+}
+.report-card__status:empty {
+  display: none;
+}
+
+/* Matches the PDF: pure black, white type, thin rules, no decoration. */
+.report-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  background: #000;
+  color: #fff;
+  padding: clamp(1.5rem, 5vw, 3rem);
+  outline: none;
+  animation: report-in 0.2s ease-out both;
+}
+.report-overlay__brand {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  padding-bottom: var(--s-4);
+  border-bottom: 1px solid #525252;
+}
+.report-overlay__body {
+  margin: auto;
+  width: min(100%, 34rem);
+  display: grid;
+  gap: var(--s-4);
+}
+.report-overlay h2 {
+  font-size: clamp(1.7rem, 4.5vw, 2.4rem);
+  font-weight: 400;
+}
+.report-overlay__text {
+  color: #a6a6a6;
+}
+.report-overlay__tagline {
+  margin-top: var(--s-4);
+  padding-top: var(--s-4);
+  border-top: 1px solid #525252;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: var(--text-lg);
+}
+.report-overlay__actions {
+  display: flex;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+}
+.report-btn {
+  min-height: 44px;
+  padding: 0 var(--s-5);
+  border: 1px solid #d6d6d6;
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.report-btn:hover {
+  background: #1a1a1a;
+}
+.report-btn--solid {
+  background: #fff;
+  color: #000;
+}
+.report-btn--solid:hover {
+  background: #e6e6e6;
+}
+.report-btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+/* Indeterminate: the real duration is unknown, so no percentage is implied. */
+.report-bar {
+  position: relative;
+  height: 2px;
+  overflow: hidden;
+  background: #3a3a3a;
+}
+.report-bar span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 35%;
+  background: #fff;
+  animation: report-sweep 1.4s ease-in-out infinite;
+}
+@keyframes report-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+@keyframes report-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .report-bar span {
+    animation: none;
+    width: 100%;
+    opacity: 0.6;
+  }
+}

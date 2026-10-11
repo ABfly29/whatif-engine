@@ -13,6 +13,7 @@ import { EngineProgress } from "../components/workspace/EngineProgress";
 import { InputSections } from "../components/workspace/InputSections";
 import { ResultSummary } from "../components/workspace/ResultSummary";
 import { CashflowChart } from "../components/workspace/CashflowChart";
+import { ReportDownload } from "../components/workspace/ReportDownload";
 import { AnnualTables, MonthlyTable } from "../components/workspace/AnnualTables";
 import { SensitivityGrid } from "../components/workspace/SensitivityGrid";
 import { Assumptions } from "../components/Assumptions";
@@ -63,6 +64,13 @@ export default function Workspace() {
     const required = id === "current" ? form.curPay : id === "offer" ? form.newPay : "x";
     return { id, label: LABELS[id], hasError, done: !hasError && required.trim() !== "" };
   });
+
+  // The result may lag the form by the debounce delay. Only a result computed from
+  // exactly the inputs now on screen is safe to put in a report.
+  const freshResult =
+    comparison.status === "success" && comparison.key === key && request && !hasErrors
+      ? comparison.data
+      : null;
 
   const result =
     comparison.status === "success"
@@ -152,6 +160,7 @@ export default function Workspace() {
                 sample={isSample(form)}
               />
               <CashflowChart months={result.months} />
+              {freshResult && <ReportDownload request={request} result={freshResult} />}
               <Disclosure title="Year by year" hint="income, costs and savings" defaultOpen>
                 <AnnualTables stay={result.stay_annual} switchRows={result.switch_annual} />
               </Disclosure>
