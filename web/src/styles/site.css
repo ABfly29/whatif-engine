@@ -116,10 +116,13 @@
 }
 
 /* ---------- Footer ---------- */
-#root {
+.layout {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+}
+.layout--wide .container {
+  width: min(100% - 2.5rem, 1320px);
 }
 #main {
   flex: 1 0 auto;

@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useSearchParams } from "react-router-dom";
 import { careerSensitivity, compareCareer, warmCalculator } from "../lib/api";
 import { getEngineStatus, subscribeEngineStatus } from "../lib/engineClient";
 import { BLANK, SAMPLE, isSample, toRequest, type FormState } from "../lib/form";
+import { decodeForm, scenarioLink } from "../lib/share";
 import { SECTION_FIELDS, validate, type SectionId } from "../lib/validation";
 import { useApiQuery } from "../lib/useApiQuery";
 import { Button } from "../components/ui/Button";
@@ -23,7 +25,10 @@ const LABELS: Record<SectionId, string> = {
 };
 
 export default function Workspace() {
-  const [form, setForm] = useState<FormState>(SAMPLE);
+  // A shared link (#/app?curPay=...) opens with that scenario; otherwise the sample.
+  const [searchParams] = useSearchParams();
+  const [form, setForm] = useState<FormState>(() => decodeForm(searchParams) ?? SAMPLE);
+  const [linkState, setLinkState] = useState<"idle" | "copied" | "manual">("idle");
   const [sensitivityOpen, setSensitivityOpen] = useState(false);
   const engine = useSyncExternalStore(subscribeEngineStatus, getEngineStatus);
   useEffect(() => warmCalculator(), []);
@@ -40,6 +45,15 @@ export default function Workspace() {
     500,
     sensitivityOpen,
   );
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(scenarioLink(form, window.location));
+      setLinkState("copied");
+    } catch {
+      setLinkState("manual");
+    }
+  };
 
   const set = (k: keyof FormState, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -79,7 +93,26 @@ export default function Workspace() {
           <Button variant="ghost" small onClick={() => setForm(BLANK)}>
             Clear all
           </Button>
+          <Button variant="ghost" small onClick={copyLink}>
+            Copy link to this scenario
+          </Button>
         </div>
+        <p className="muted small" role="status">
+          {linkState === "copied"
+            ? "Link copied. Anyone with it can see these numbers; nothing is uploaded."
+            : linkState === "manual"
+              ? "Couldn't copy automatically. Select the link below and copy it."
+              : "Share a link that reopens this scenario. Your numbers stay in the link, not on a server."}
+        </p>
+        {linkState === "manual" && (
+          <input
+            className="share-link"
+            readOnly
+            aria-label="Link to this scenario"
+            value={scenarioLink(form, window.location)}
+            onFocus={(e) => e.currentTarget.select()}
+          />
+        )}
       </header>
 
       <div className="ws-layout">

@@ -204,6 +204,18 @@ describe("header and footer", () => {
     expect(within(footer).getByText(/results are not guarantees/i)).toBeInTheDocument();
   });
 
+  it("widens the shared layout on the calculator only", async () => {
+    const { unmount } = renderAt("/");
+    expect(document.querySelector(".layout")).not.toHaveClass("layout--wide");
+    unmount();
+    renderAt("/app");
+    await screen.findByRole("heading", { name: "Stay or switch?" });
+    expect(document.querySelector(".layout")).toHaveClass("layout--wide");
+    // Header, content and footer all sit inside the widened layout.
+    expect(document.querySelector(".layout--wide .site-header")).not.toBeNull();
+    expect(document.querySelector(".layout--wide .site-footer")).not.toBeNull();
+  });
+
   it("shows the header CTA on the landing page", () => {
     renderAt("/");
     const header = siteHeader();
@@ -370,5 +382,52 @@ describe("engine warm-up and progress", () => {
     renderAt("/app");
     expect(await screen.findByText(/Loading the calculation engine/)).toBeInTheDocument();
     expect(screen.getByRole("progressbar")).not.toHaveAttribute("value");
+  });
+});
+
+describe("shareable links", () => {
+  it("opens a shared scenario from the link instead of the sample", async () => {
+    renderAt("/app?curPay=900000&newPay=2000000&gap=2");
+    await waitFor(() => expect(compareCareer).toHaveBeenCalled());
+    const req = vi.mocked(compareCareer).mock.calls.at(-1)![0];
+    expect(req.current_job.annual_take_home).toBe("900000");
+    expect(req.new_job.annual_take_home).toBe("2000000");
+    expect(req.employment_gap_months).toBe(2);
+    // Untouched fields keep their sample values; it is no longer "the sample".
+    expect(req.new_costs.rent).toBe("25000");
+    expect(screen.queryByText(/sample numbers, not yours/i)).not.toBeInTheDocument();
+  });
+
+  it("ignores junk in a link and falls back to the sample", async () => {
+    renderAt("/app?curPay=<script>&zzz=1");
+    expect(await screen.findByText(/sample numbers, not yours/i)).toBeInTheDocument();
+  });
+
+  it("copies a link that reopens the current scenario", async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+    renderAt("/app");
+    const pay = (await screen.findAllByLabelText("Annual take-home pay"))[0];
+    await user.clear(pay);
+    await user.type(pay, "875000");
+    await user.click(screen.getByRole("button", { name: "Copy link to this scenario" }));
+    expect(writeText).toHaveBeenCalledOnce();
+    const link = new URL(writeText.mock.calls[0][0]);
+    expect(link.hash).toMatch(/^#\/app\?/);
+    expect(new URLSearchParams(link.hash.split("?")[1]).get("curPay")).toBe("875000");
+    expect(await screen.findByText(/Link copied/)).toBeInTheDocument();
+  });
+
+  it("shows the link to copy by hand when the clipboard is unavailable", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      clipboard: { writeText: vi.fn().mockRejectedValue(new Error("denied")) },
+    });
+    renderAt("/app");
+    await user.click(await screen.findByRole("button", { name: "Copy link to this scenario" }));
+    const field = await screen.findByLabelText("Link to this scenario");
+    expect((field as HTMLInputElement).value).toContain("#/app");
   });
 });

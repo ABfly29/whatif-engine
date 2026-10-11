@@ -56,8 +56,12 @@ export default function Layout() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
+  // The calculator is wider than the marketing pages; the header and footer
+  // follow it so everything shares one left edge.
+  const wide = location.pathname === "/app";
+
   return (
-    <>
+    <div className={wide ? "layout layout--wide" : "layout"}>
       <a
         href="#main"
         className="skip-link"
@@ -150,6 +154,6 @@ export default function Layout() {
           <span>Built for decisions in India · amounts in ₹</span>
         </div>
       </footer>
-    </>
+    </div>
   );
 }

@@ -1,10 +1,16 @@
 import { lazy, Suspense } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router-dom";
 import Layout from "./components/Layout";
 import Landing from "./pages/Landing";
 
 // The calculator pulls in the chart library; keep it off the landing page.
 const Workspace = lazy(() => import("./pages/Workspace"));
+
+/** Remount when the link's query changes, so opening another shared link in the same tab loads it. */
+function WorkspaceRoute() {
+  const { search } = useLocation();
+  return <Workspace key={search} />;
+}
 
 export default function App() {
   return (
@@ -15,7 +21,7 @@ export default function App() {
           path="app"
           element={
             <Suspense fallback={<p className="container muted">Loading…</p>}>
-              <Workspace />
+              <WorkspaceRoute />
             </Suspense>
           }
         />
