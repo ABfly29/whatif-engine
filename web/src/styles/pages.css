@@ -9,7 +9,7 @@
 /* Wider than the marketing pages: the results tables need the room. */
 .workspace.container {
   width: min(100% - 2.5rem, 1320px);
-  padding: var(--s-6) 0 0;
+  padding: var(--s-6) 0 var(--s-6);
 }
 .ws-head {
   display: grid;
@@ -244,6 +244,9 @@ td[data-tone="negative"] {
   }
 }
 @media (max-width: 560px) {
+  .workspace.container {
+    padding-bottom: var(--s-5);
+  }
   .grid-2,
   .metrics {
     grid-template-columns: 1fr;
