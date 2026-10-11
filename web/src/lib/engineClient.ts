@@ -10,7 +10,7 @@ export class EngineStartError extends Error {}
 /** What the UI can show about the in-browser engine. */
 export type EngineStatus =
   | { phase: "idle" }
-  | { phase: "loading"; loaded: number; total: number }
+  | { phase: "loading"; stage: "download" | "start"; loaded: number; total: number }
   | { phase: "ready" }
   | { phase: "error" };
 
@@ -25,6 +25,8 @@ let worker: Worker | null = null;
 let nextId = 1;
 let status: EngineStatus = IDLE;
 const pending = new Map<number, Pending>();
+// Kept so a restart can re-send whatever is still waiting.
+const requests = new Map<number, WorkerRequest>();
 const listeners = new Set<() => void>();
 
 function setStatus(next: EngineStatus) {
@@ -44,6 +46,7 @@ export const subscribeEngineStatus = (listener: () => void) => {
 function failAll(error: Error) {
   for (const p of pending.values()) p.reject(error);
   pending.clear();
+  requests.clear();
   worker?.terminate();
   worker = null;
   setStatus({ phase: "error" });
@@ -58,7 +61,10 @@ function getWorker(): Worker {
     const msg = event.data;
     if ("type" in msg) {
       if (msg.type === "progress") {
-        setStatus({ phase: "loading", loaded: msg.loaded, total: msg.total });
+        setStatus({ phase: "loading", stage: "download", loaded: msg.loaded, total: msg.total });
+      } else if (msg.type === "stage") {
+        const prev = status.phase === "loading" ? status : { loaded: 0, total: 0 };
+        setStatus({ phase: "loading", stage: "start", loaded: prev.loaded, total: prev.total });
       } else {
         setStatus({ phase: "ready" });
       }
@@ -67,6 +73,7 @@ function getWorker(): Worker {
     const p = pending.get(msg.id);
     if (!p) return; // request was aborted
     pending.delete(msg.id);
+    requests.delete(msg.id);
     if ("fatal" in msg) {
       setStatus({ phase: "error" });
       p.reject(new EngineStartError(msg.fatal));
@@ -77,7 +84,7 @@ function getWorker(): Worker {
   };
   w.onerror = () => failAll(new EngineStartError("The calculation worker failed."));
   worker = w;
-  setStatus({ phase: "loading", loaded: 0, total: 0 });
+  setStatus({ phase: "loading", stage: "download", loaded: 0, total: 0 });
   return w;
 }
 
@@ -96,11 +103,13 @@ export function callEngine(
     signal?.addEventListener(
       "abort",
       () => {
+        requests.delete(id);
         if (pending.delete(id)) reject(abortError());
       },
       { once: true },
     );
     const request: WorkerRequest = { id, kind, payload: JSON.stringify(payload) };
+    requests.set(id, request);
     getWorker().postMessage(request);
   });
 }
@@ -114,6 +123,23 @@ export function warmEngine(): void {
   callEngine(WARMUP, null).catch(() => {
     /* a real request will surface the error */
   });
+}
+
+/**
+ * Start the engine over again, e.g. after a stalled download. Anything still
+ * waiting is re-sent to the new worker, so callers just keep waiting.
+ */
+export function restartEngine(): void {
+  const inflight = [...requests.values()];
+  worker?.terminate();
+  worker = null;
+  setStatus(IDLE);
+  if (inflight.length === 0) {
+    warmEngine();
+    return;
+  }
+  const w = getWorker();
+  for (const request of inflight) w.postMessage(request);
 }
 
 /** Test hook: forget the worker and any in-flight requests. */

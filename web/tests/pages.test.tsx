@@ -209,7 +209,8 @@ describe("header and footer", () => {
     expect(document.querySelector(".layout")).not.toHaveClass("layout--wide");
     unmount();
     renderAt("/app");
-    await screen.findByRole("heading", { name: "Stay or switch?" });
+    // First test to load the lazily imported calculator, so allow a cold import.
+    await screen.findByRole("heading", { name: "Stay or switch?" }, { timeout: 10_000 });
     expect(document.querySelector(".layout")).toHaveClass("layout--wide");
     // Header, content and footer all sit inside the widened layout.
     expect(document.querySelector(".layout--wide .site-header")).not.toBeNull();
@@ -368,19 +369,19 @@ describe("engine warm-up and progress", () => {
     renderAt("/app");
     await waitFor(() => expect(FakeWorker.instances).toHaveLength(1));
     FakeWorker.last().reply({ type: "progress", loaded: 5_242_880, total: 10_485_760 });
-    expect(await screen.findByText(/Loading the calculation engine/)).toBeInTheDocument();
+    expect(await screen.findByText(/Downloading the calculation engine/)).toBeInTheDocument();
     expect(screen.getByText(/50% · 5\.0 of 10\.0 MB/)).toBeInTheDocument();
     expect(screen.getByRole("progressbar")).toHaveAttribute("value", "50");
     FakeWorker.last().reply({ type: "ready" });
     await waitFor(() =>
-      expect(screen.queryByText(/Loading the calculation engine/)).not.toBeInTheDocument(),
+      expect(screen.queryByText(/calculation engine…/)).not.toBeInTheDocument(),
     );
   });
 
   it("shows an indeterminate bar before the size is known", async () => {
     vi.mocked(compareCareer).mockReturnValue(new Promise(() => {}));
     renderAt("/app");
-    expect(await screen.findByText(/Loading the calculation engine/)).toBeInTheDocument();
+    expect(await screen.findByText(/Downloading the calculation engine/)).toBeInTheDocument();
     expect(screen.getByRole("progressbar")).not.toHaveAttribute("value");
   });
 });
@@ -429,5 +430,16 @@ describe("shareable links", () => {
     await user.click(await screen.findByRole("button", { name: "Copy link to this scenario" }));
     const field = await screen.findByLabelText("Link to this scenario");
     expect((field as HTMLInputElement).value).toContain("#/app");
+  });
+
+  it("says the engine is starting once the download is complete, not '100%'", async () => {
+    vi.mocked(compareCareer).mockReturnValue(new Promise(() => {}));
+    renderAt("/app");
+    await waitFor(() => expect(FakeWorker.instances).toHaveLength(1));
+    FakeWorker.last().reply({ type: "progress", loaded: 10_485_760, total: 10_485_760 });
+    FakeWorker.last().reply({ type: "stage", stage: "start" });
+    expect(await screen.findByText(/Starting the calculation engine/)).toBeInTheDocument();
+    expect(screen.getByText(/Download complete/)).toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).not.toHaveAttribute("value");
   });
 });

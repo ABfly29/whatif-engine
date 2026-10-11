@@ -74,15 +74,23 @@ for (const [name, pkg] of needed) {
 const typeOf = (name) =>
   name.endsWith(".wasm") ? "application/wasm"
   : name.endsWith(".zip") ? "application/zip"
+  : name.endsWith(".json") ? "application/json"
+  : name.endsWith(".mjs") ? "text/javascript"
   : "application/octet-stream";
+// load: "serve"  -> the worker downloads it and hands the bytes to Pyodide.
+// load: "import" -> Pyodide loads it with import(), which cannot be intercepted,
+//                   so the worker import()s the same URL first; the browser's
+//                   module map then gives Pyodide that module with no 2nd fetch.
 const manifestNames = [
-  "pyodide.asm.wasm",
-  "python_stdlib.zip",
-  ...[...needed.values()].map((p) => p.file_name),
+  { name: "pyodide.asm.wasm", load: "serve" },
+  { name: "python_stdlib.zip", load: "serve" },
+  { name: "pyodide-lock.json", load: "serve" },
+  { name: "pyodide.asm.mjs", load: "import" },
+  ...[...needed.values()].map((p) => ({ name: p.file_name, load: "serve" })),
 ];
 const files = [];
-for (const name of manifestNames) {
-  files.push({ name, size: (await stat(join(outDir, name))).size, type: typeOf(name) });
+for (const { name, load } of manifestNames) {
+  files.push({ name, size: (await stat(join(outDir, name))).size, type: typeOf(name), load });
 }
 await writeFile(join(outDir, "manifest.json"), JSON.stringify({ version, files }));
 

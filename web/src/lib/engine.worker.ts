@@ -14,6 +14,7 @@ export type WorkerResponse =
   | { id: number; out: string }
   | { id: number; fatal: string }
   | { type: "progress"; loaded: number; total: number }
+  | { type: "stage"; stage: "start" }
   | { type: "ready" };
 
 /** Request kind that only makes sure the engine is loaded. */
@@ -24,7 +25,10 @@ let ready: Promise<Handle> | null = null;
 const post = (message: WorkerResponse) => self.postMessage(message);
 
 interface Manifest {
-  files: { name: string; size: number; type: string }[];
+  // load "serve" (default): download, then hand the bytes to Pyodide.
+  // load "import": Pyodide loads it with import(), which cannot be intercepted,
+  // so we import() the same URL first and the browser reuses that module.
+  files: { name: string; size: number; type: string; load?: "serve" | "import" }[];
 }
 
 /**
@@ -58,6 +62,12 @@ async function prefetch(base: URL): Promise<void> {
   await Promise.all(
     manifest.files.map(async (file) => {
       const url = new URL(`pyodide/${file.name}`, base).href;
+      if (file.load === "import") {
+        await import(/* @vite-ignore */ url);
+        loaded += file.size;
+        report();
+        return;
+      }
       const res = await fetch(url);
       if (!res.ok || !res.body) throw new Error(`${file.name}: HTTP ${res.status}`);
       const chunks: Uint8Array<ArrayBuffer>[] = [];
@@ -88,6 +98,8 @@ async function prefetch(base: URL): Promise<void> {
 async function start(): Promise<Handle> {
   const base = new URL(import.meta.env.BASE_URL, self.location.href);
   await prefetch(base);
+  // Download is done; what remains is compiling the runtime and starting Python.
+  post({ type: "stage", stage: "start" });
 
   const pyodide = await loadPyodide({ indexURL: new URL("pyodide/", base).href });
   await pyodide.loadPackage("pydantic");
