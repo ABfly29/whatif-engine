@@ -36,15 +36,51 @@ REQUEST = {
 }
 
 
+CASH = {
+    **REQUEST,
+    "monthly_take_home": "120000",
+    "monthly_household_expenses": "60000",
+    "liquid_savings": "2500000",
+    "emergency_fund": "500000",
+    "payment_method": "cash",
+    "down_payment": "0",
+    "annual_salary_growth": "0.08",
+    "savings_return": "0.04",
+    "delay_months": 18,
+    "horizon_years": 5,
+}
+
+# Tight finances: warnings fire, and the loan (84 months) outlasts the 60-month projection.
+STRAIN = {
+    **REQUEST,
+    "monthly_take_home": "60000",
+    "monthly_household_expenses": "52000",
+    "liquid_savings": "250000",
+    "emergency_fund": "200000",
+    "purchase_price": "1200000",
+    "down_payment": "300000",
+    "loan_annual_rate": "0.115",
+    "loan_tenure_months": 84,
+    "annual_depreciation": "0.2",
+    "delay_months": 6,
+    "alternative_price": "800000",
+    "alternative_running_share": "0.8",
+    "horizon_years": 1,
+}
+
+FIXTURES = {"expense": REQUEST, "expense-cash": CASH, "expense-strain": STRAIN}
+
+
 def main() -> int:
-    out = json.loads(handle("expense", json.dumps(REQUEST)))
-    assert out["ok"], out
-    target = ROOT / "web" / "tests" / "fixtures" / "expense.json"
-    target.write_text(
-        json.dumps({"request": REQUEST, "response": out["data"]}, indent=1) + "\n",
-        encoding="utf-8",
-    )
-    print(f"wrote {target.relative_to(ROOT)}")
+    for name, request in FIXTURES.items():
+        out = json.loads(handle("expense", json.dumps(request)))
+        assert out["ok"], out
+        target = ROOT / "web" / "tests" / "fixtures" / f"{name}.json"
+        target.write_text(
+            json.dumps({"request": request, "response": out["data"]}, indent=1) + "\n",
+            encoding="utf-8",
+        )
+        print(f"wrote {target.relative_to(ROOT)}")
     return 0
 
 

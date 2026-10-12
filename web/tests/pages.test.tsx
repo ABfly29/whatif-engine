@@ -178,14 +178,14 @@ describe("landing page", () => {
 });
 
 describe("header and footer", () => {
-  it("offers navigation and a calculator CTA", () => {
+  it("offers section navigation without a repeated calculator button", () => {
     renderAt("/");
     const main = screen.getByRole("navigation", { name: "Main" });
     expect(main).toHaveTextContent("How it works");
     expect(main).toHaveTextContent("What you can compare");
     expect(main).toHaveTextContent("About");
-    const cta = screen.getAllByRole("link", { name: "Try the calculator" })[0];
-    expect(cta).toHaveAttribute("href", "/app");
+    // The calculators are reached from the landing page itself, not from a header button.
+    expect(screen.queryByRole("link", { name: "Try the calculator" })).toBeNull();
   });
 
   it("toggles the mobile menu accessibly and closes on Escape", async () => {
@@ -235,22 +235,23 @@ describe("header and footer", () => {
     expect(document.querySelector(".layout--wide .site-footer")).not.toBeNull();
   });
 
-  it("shows the header CTA on the landing page", () => {
-    renderAt("/");
-    const header = siteHeader();
-    expect(within(header).getByRole("link", { name: "Try the calculator" })).toHaveAttribute(
-      "href",
-      "/app",
-    );
-  });
-
-  it("hides the header CTA on the calculator, desktop and mobile menu", async () => {
+  it("has no calculator button in the header or mobile menu on any page", async () => {
     const user = userEvent.setup();
-    renderAt("/app");
-    const header = siteHeader();
-    expect(within(header).queryByRole("link", { name: "Try the calculator" })).toBeNull();
-    await user.click(within(header).getByRole("button", { name: "Open menu" }));
-    expect(within(header).queryByRole("link", { name: "Try the calculator" })).toBeNull();
+    for (const path of ["/", "/app", "/expenses"]) {
+      const { unmount } = renderAt(path);
+      const header = siteHeader();
+      expect(within(header).queryByRole("link", { name: "Try the calculator" })).toBeNull();
+      await user.click(within(header).getByRole("button", { name: "Open menu" }));
+      const mobile = within(header).getByRole("navigation", { name: "Mobile" });
+      expect(within(mobile).queryByRole("link", { name: "Try the calculator" })).toBeNull();
+      // The mobile menu holds only the section links.
+      expect(within(mobile).getAllByRole("link").map((l) => l.textContent)).toEqual([
+        "How it works",
+        "What you can compare",
+        "About",
+      ]);
+      unmount();
+    }
   });
 
   it("keeps the logo and nav links on the calculator, with the logo going home", async () => {
@@ -270,30 +271,39 @@ describe("header and footer", () => {
         name: "Make your next big financial move with clarity.",
       }),
     ).toBeInTheDocument();
-    // CTA returns once back on the landing page.
-    expect(
-      within(siteHeader()).getByRole("link", { name: "Try the calculator" }),
-    ).toBeInTheDocument();
   });
 
   it("closes the mobile menu after navigating from it", async () => {
     const user = userEvent.setup();
-    renderAt("/");
+    renderAt("/app");
     const header = siteHeader();
     await user.click(within(header).getByRole("button", { name: "Open menu" }));
     const mobile = within(header).getByRole("navigation", { name: "Mobile" });
-    await user.click(within(mobile).getByRole("link", { name: "Try the calculator" }));
-    expect(await screen.findByRole("heading", { name: "Stay or switch?" })).toBeInTheDocument();
+    // A section link from the calculator is a route change back to the landing page.
+    await user.click(within(mobile).getByRole("link", { name: "About" }));
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "Make your next big financial move with clarity.",
+      }),
+    ).toBeInTheDocument();
     expect(
       within(siteHeader()).getByRole("button", { name: "Open menu" }),
     ).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("navigates from the header CTA to the calculator", async () => {
+  it("reaches each calculator from the landing page cards", async () => {
     const user = userEvent.setup();
-    renderAt("/");
-    await user.click(screen.getAllByRole("link", { name: "Try the calculator" })[0]);
+    const first = renderAt("/");
+    await user.click(screen.getByRole("link", { name: /Open the calculator/ }));
     expect(await screen.findByRole("heading", { name: "Stay or switch?" })).toBeInTheDocument();
+    first.unmount();
+
+    renderAt("/");
+    await user.click(screen.getByRole("link", { name: /Open the simulator/ }));
+    expect(
+      await screen.findByRole("heading", { name: "Can your finances carry this purchase?" }),
+    ).toBeInTheDocument();
   });
 });
 
@@ -470,8 +480,7 @@ describe("engine warm-up and progress", () => {
     const user = userEvent.setup();
     renderAt("/");
     await user.tab(); // skip link
-    const header = siteHeader();
-    within(header).getByRole("link", { name: "Try the calculator" }).focus();
+    screen.getAllByRole("link", { name: "Run a comparison" })[0].focus();
     expect(FakeWorker.last().posted[0].kind).toBe("__warmup");
   });
 

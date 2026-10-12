@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { warmOnIntent } from "../lib/warm";
 import { ScrollLink } from "./ScrollLink";
-import { ButtonLink } from "./ui/Button";
 
 const NAV = [
   { id: "how", label: "How it works" },
@@ -45,8 +44,6 @@ export default function Layout() {
   const [openedAt, setOpenedAt] = useState<string | null>(null);
   const location = useLocation();
   const open = openedAt === location.key;
-  // The calculator is already open there, so its entry-point CTA is hidden.
-  const showCta = location.pathname !== "/app";
   useSectionScroll();
 
   useEffect(() => {
@@ -87,12 +84,6 @@ export default function Layout() {
             ))}
           </nav>
 
-          {showCta && (
-            <div className="site-header__cta">
-              <ButtonLink to="/app" small>Try the calculator</ButtonLink>
-            </div>
-          )}
-
           <button
             type="button"
             className="menu-btn"
@@ -112,7 +103,6 @@ export default function Layout() {
                 {n.label}
               </ScrollLink>
             ))}
-            {showCta && <ButtonLink to="/app">Try the calculator</ButtonLink>}
           </nav>
         </div>
       </header>

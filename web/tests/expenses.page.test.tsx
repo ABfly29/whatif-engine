@@ -14,6 +14,17 @@ vi.mock("../src/lib/api", async (orig) => {
 });
 import { simulateExpense } from "../src/lib/api";
 
+// Plain function so tests can observe a click without generating a real PDF.
+let reportCalls: { request: { purchase_price: string }; result: unknown }[] = [];
+vi.mock("../src/lib/report/download", async (orig) => ({
+  ...(await orig<typeof import("../src/lib/report/download")>()),
+  downloadExpenseReport: async (input: (typeof reportCalls)[number]) => {
+    reportCalls.push(input);
+    return "whatif-expense-report-test.pdf";
+  },
+  warmReport: () => {},
+}));
+
 // The first test pays for the lazy import of the page and chart library; on a loaded
 // machine that can pass vitest's default 5s limit even though the page itself is fine.
 vi.setConfig({ testTimeout: 30_000 });
@@ -30,6 +41,7 @@ function renderAt(path: string) {
 }
 
 beforeEach(() => {
+  reportCalls = [];
   FakeWorker.instances = [];
   vi.stubGlobal("Worker", FakeWorker);
   vi.mocked(simulateExpense).mockReset().mockResolvedValue(RESPONSE);
@@ -279,5 +291,120 @@ describe("explicit calculation", () => {
     await user.type(delay, "30");
     expect(screen.getAllByText("Buy in 12 months").length).toBeGreaterThan(0);
     expect(screen.queryByText("Buy in 30 months")).toBeNull();
+  });
+});
+
+describe("PDF report button in the simulator", () => {
+  const reportButton = () => screen.queryByRole("button", { name: "Download PDF Report" });
+  const start = async () => {
+    const user = userEvent.setup();
+    renderAt("/expenses");
+    await screen.findByRole("button", { name: "Calculate" }, { timeout: 10_000 });
+    return user;
+  };
+  const calculated = async () => {
+    const user = await start();
+    await calculate(user);
+    await screen.findByRole("table", { name: "Monthly picture" });
+    return user;
+  };
+
+  it("is not offered before anything has been calculated", async () => {
+    await start();
+    expect(reportButton()).toBeNull();
+  });
+
+  it("appears below the results once a calculation succeeds", async () => {
+    await calculated();
+    const button = await screen.findByRole("button", { name: "Download PDF Report" });
+    expect(document.querySelector(".ws-results")).toContainElement(button);
+    const table = screen.getByRole("table", { name: "Monthly picture" });
+    expect(table.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("is hidden as soon as an input changes, and says why", async () => {
+    const user = await calculated();
+    expect(reportButton()).not.toBeNull();
+    await user.type(screen.getByLabelText("On-road price"), "0");
+    expect(await screen.findByText(/These results are out of date/)).toBeInTheDocument();
+    expect(screen.getByText(/PDF download is paused/)).toBeInTheDocument();
+    expect(reportButton()).toBeNull();
+    // The old result is still readable, but cannot be exported.
+    expect(screen.getByRole("table", { name: "Monthly picture" })).toBeInTheDocument();
+  });
+
+  it("returns only after Calculate succeeds again", async () => {
+    const user = await calculated();
+    await user.type(screen.getByLabelText("On-road price"), "0");
+    expect(reportButton()).toBeNull();
+
+    let finish!: (r: ExpenseResponse) => void;
+    vi.mocked(simulateExpense).mockReturnValueOnce(new Promise((resolve) => (finish = resolve)));
+    await calculate(user);
+    await screen.findByRole("button", { name: "Calculating…" });
+    expect(reportButton()).toBeNull(); // not while the new calculation is still running
+    finish(RESPONSE);
+    expect(await screen.findByRole("button", { name: "Download PDF Report" })).toBeInTheDocument();
+  });
+
+  it("stays hidden when the recalculation fails, because the shown result is still out of date", async () => {
+    const user = await calculated();
+    await user.type(screen.getByLabelText("On-road price"), "0");
+    vi.mocked(simulateExpense).mockRejectedValueOnce(new Error("Engine said no."));
+    await calculate(user);
+    expect(await screen.findByRole("alert")).toHaveTextContent("Engine said no.");
+    expect(reportButton()).toBeNull();
+  });
+
+  it("is not shown when the first calculation fails, or when the inputs are invalid", async () => {
+    vi.mocked(simulateExpense).mockReset().mockRejectedValue(new Error("Engine said no."));
+    const user = await start();
+    await calculate(user);
+    await screen.findByRole("alert");
+    expect(reportButton()).toBeNull();
+    await user.clear(screen.getByLabelText("On-road price"));
+    await calculate(user);
+    expect(screen.getByText(/Fix the highlighted fields/)).toBeInTheDocument();
+    expect(reportButton()).toBeNull();
+  });
+
+  it("is also hidden when invalid input follows a good result", async () => {
+    const user = await calculated();
+    await user.clear(screen.getByLabelText("On-road price"));
+    await calculate(user);
+    expect(screen.getByText(/Fix the highlighted fields/)).toBeInTheDocument();
+    expect(reportButton()).toBeNull();
+  });
+
+  it("builds the report from the calculated request and the engine's result, never from the form", async () => {
+    const user = await start();
+    const price = screen.getByLabelText("On-road price");
+    await user.clear(price);
+    await user.type(price, "1250000");
+    await calculate(user);
+    await screen.findByRole("table", { name: "Monthly picture" });
+
+    await user.click(await screen.findByRole("button", { name: "Download PDF Report" }));
+    await waitFor(() => expect(reportCalls).toHaveLength(1));
+    expect(reportCalls[0].request.purchase_price).toBe("1250000");
+    // The very object the engine returned, not a copy or a mixture with the form.
+    expect(reportCalls[0].result).toBe(RESPONSE);
+    expect(await screen.findByText(/Downloaded whatif-expense-report-test\.pdf/)).toBeInTheDocument();
+  });
+
+  it("after editing and recalculating, the report uses the new request and the new result", async () => {
+    const user = await calculated();
+    const second = { ...RESPONSE, months: [...RESPONSE.months] } as ExpenseResponse;
+    vi.mocked(simulateExpense).mockResolvedValueOnce(second);
+    const price = screen.getByLabelText("On-road price");
+    await user.clear(price);
+    await user.type(price, "1100000");
+    expect(reportButton()).toBeNull();
+    await calculate(user);
+    await user.click(await screen.findByRole("button", { name: "Download PDF Report" }));
+    await waitFor(() => expect(reportCalls).toHaveLength(1));
+    expect(reportCalls[0].request.purchase_price).toBe("1100000");
+    expect(reportCalls[0].result).toBe(second);
+    expect(reportCalls[0].result).not.toBe(RESPONSE);
   });
 });

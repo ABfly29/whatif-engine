@@ -1,6 +1,13 @@
-import { reportFileName } from "./filename";
+import type { ExpenseReportInput } from "./expenseModel";
+import { expenseReportFileName, reportFileName } from "./filename";
 import type { ReportInput } from "./types";
-import { generateInWorker, ReportToolsError, warmReportWorker, workersAvailable } from "./workerClient";
+import {
+  generateExpenseInWorker,
+  generateInWorker,
+  ReportToolsError,
+  warmReportWorker,
+  workersAvailable,
+} from "./workerClient";
 
 /**
  * Browser-only "generate and download". The PDF libraries are loaded on demand
@@ -37,6 +44,20 @@ async function generateBlob(input: ReportInput): Promise<Blob> {
 export async function downloadReport(input: ReportInput): Promise<string> {
   const blob = await generateBlob(input);
   const filename = reportFileName(input);
+  saveBlob(blob, filename);
+  return filename;
+}
+
+/** Generate the major expense report and download it as soon as it is ready. Returns the file name. */
+export async function downloadExpenseReport(input: ExpenseReportInput): Promise<string> {
+  let blob: Blob;
+  if (workersAvailable()) {
+    blob = await generateExpenseInWorker(input);
+  } else {
+    const { generateExpenseReportBlob } = await import("./expensePdf");
+    blob = await generateExpenseReportBlob(input);
+  }
+  const filename = expenseReportFileName(input);
   saveBlob(blob, filename);
   return filename;
 }

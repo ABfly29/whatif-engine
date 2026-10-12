@@ -12,18 +12,18 @@ import type { ReportInput, ReportModel } from "./types";
  * draw the rupee sign.
  */
 
-type AutoTable = (doc: jsPDF, options: UserOptions) => void;
+export type AutoTable = (doc: jsPDF, options: UserOptions) => void;
 type RGB = [number, number, number];
 
 // ---- Design tokens (mm and pt) ----
-const PAGE = { w: 210, h: 297 };
-const MARGIN = 20;
-const CONTENT_W = PAGE.w - MARGIN * 2;
-const FOOTER_Y = 285;
+export const PAGE = { w: 210, h: 297 };
+export const MARGIN = 20;
+export const CONTENT_W = PAGE.w - MARGIN * 2;
+export const FOOTER_Y = 285;
 const BOTTOM_LIMIT = FOOTER_Y - 8; // content must end above the footer
 const PT = 0.3528; // mm per point
 
-const COLOR = {
+export const COLOR = {
   bg: [0, 0, 0] as RGB,
   text: [255, 255, 255] as RGB,
   muted: [166, 166, 166] as RGB,
@@ -38,7 +38,7 @@ const FONT: Record<FontKey, { family: string; style: "normal" | "bold" }> = {
   bold: { family: "NotoSans", style: "bold" },
 };
 
-interface Ctx {
+export interface Ctx {
   doc: jsPDF;
   autoTable: AutoTable;
   y: number;
@@ -53,7 +53,7 @@ function paintBackground(doc: jsPDF) {
 }
 
 /** Every page, including ones the table plugin adds itself, starts black. */
-function installBackground(doc: jsPDF) {
+export function installBackground(doc: jsPDF) {
   const addPage = doc.addPage.bind(doc);
   doc.addPage = ((...args: Parameters<jsPDF["addPage"]>) => {
     const result = addPage(...args);
@@ -74,7 +74,7 @@ export function preloadReportAssets(): Promise<unknown> {
   ]);
 }
 
-async function registerFonts(doc: jsPDF) {
+export async function registerFonts(doc: jsPDF) {
   const [serif, sans, bold] = await Promise.all([
     import("./fonts/NotoSerif-Regular"),
     import("./fonts/NotoSans-Regular"),
@@ -89,29 +89,29 @@ async function registerFonts(doc: jsPDF) {
   add("NotoSans-Bold.ttf", bold.NOTO_SANS_BOLD, "NotoSans", "bold");
 }
 
-function setType(doc: jsPDF, font: FontKey, size: number, color: RGB = COLOR.text) {
+export function setType(doc: jsPDF, font: FontKey, size: number, color: RGB = COLOR.text) {
   doc.setFont(FONT[font].family, FONT[font].style);
   doc.setFontSize(size);
   doc.setTextColor(...color);
 }
 
-function rule(c: Ctx, y: number, color: RGB = COLOR.rule, width = 0.2) {
+export function rule(c: Ctx, y: number, color: RGB = COLOR.rule, width = 0.2) {
   c.doc.setDrawColor(...color);
   c.doc.setLineWidth(width);
   c.doc.line(MARGIN, y, PAGE.w - MARGIN, y);
 }
 
-function newPage(c: Ctx) {
+export function newPage(c: Ctx) {
   c.doc.addPage();
   c.y = MARGIN + 4;
 }
 
 /** Start a new page if `needed` mm would not fit above the footer. */
-function ensureSpace(c: Ctx, needed: number) {
+export function ensureSpace(c: Ctx, needed: number) {
   if (c.y + needed > BOTTOM_LIMIT) newPage(c);
 }
 
-function eyebrow(c: Ctx, label: string, y: number, x = MARGIN) {
+export function eyebrow(c: Ctx, label: string, y: number, x = MARGIN) {
   setType(c.doc, "bold", 7.5, COLOR.muted);
   c.doc.setCharSpace(0.5);
   c.doc.text(label.toUpperCase(), x, y);
@@ -119,7 +119,7 @@ function eyebrow(c: Ctx, label: string, y: number, x = MARGIN) {
 }
 
 /** Wrapped paragraph; returns the y just below it. */
-function paragraph(
+export function paragraph(
   c: Ctx,
   text: string,
   y: number,
@@ -133,7 +133,7 @@ function paragraph(
   return y + lines.length * lineHeight;
 }
 
-function paragraphHeight(c: Ctx, text: string, size = 10, indent = 0, spacing = 1.55): number {
+export function paragraphHeight(c: Ctx, text: string, size = 10, indent = 0, spacing = 1.55): number {
   setType(c.doc, "sans", size);
   const lines = c.doc.splitTextToSize(text, CONTENT_W - indent) as string[];
   return lines.length * size * PT * spacing;
@@ -144,7 +144,7 @@ function paragraphHeight(c: Ctx, text: string, size = 10, indent = 0, spacing = 
 const finalY = (doc: jsPDF) =>
   (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? MARGIN;
 
-function drawTable(
+export function drawTable(
   c: Ctx,
   opts: {
     head: string[];
@@ -156,6 +156,8 @@ function drawTable(
     boldFirstColumn?: boolean;
     /** Tighter rows, used where a page carries a lot of content. */
     compact?: boolean;
+    /** Move the whole table to the next page rather than split it, when it fits on one page. */
+    keepTogether?: boolean;
   },
 ) {
   const { head, body, widths, numeric, compact = false } = opts;
@@ -172,6 +174,7 @@ function drawTable(
     theme: "plain",
     showHead: "everyPage",
     rowPageBreak: "avoid",
+    pageBreak: opts.keepTogether ? "avoid" : "auto", // "auto" is the library default
     tableWidth: CONTENT_W,
     styles: {
       font: FONT.sans.family,

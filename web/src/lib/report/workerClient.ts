@@ -1,4 +1,5 @@
 import type { ReportWorkerRequest, ReportWorkerResponse } from "./report.worker";
+import type { ExpenseReportInput } from "./expenseModel";
 import type { ReportInput } from "./types";
 
 /** The PDF code could not be loaded (offline, blocked, server error). A retry can fix this. */
@@ -24,10 +25,10 @@ export function warmReportWorker(): void {
 }
 
 /**
- * Generate the report in a worker. Every attempt gets its own worker, which is
+ * Run one report job in a worker. Every attempt gets its own worker, which is
  * discarded afterwards, so "Try again" always starts from scratch.
  */
-export function generateInWorker(input: ReportInput): Promise<Blob> {
+function runInWorker(message: ReportWorkerRequest): Promise<Blob> {
   const worker = warm ?? spawn();
   warm = null;
 
@@ -45,9 +46,16 @@ export function generateInWorker(input: ReportInput): Promise<Blob> {
       event.preventDefault?.();
       reject(new ReportToolsError(event.message || "The report worker failed to load."));
     };
-    worker.postMessage({ input } satisfies ReportWorkerRequest);
+    worker.postMessage(message);
   });
 }
+
+/** The career report. */
+export const generateInWorker = (input: ReportInput): Promise<Blob> => runInWorker({ input });
+
+/** The major expense report. */
+export const generateExpenseInWorker = (input: ExpenseReportInput): Promise<Blob> =>
+  runInWorker({ expense: input });
 
 /** Test hook: drop any pre-started worker. */
 export function resetReportWorker(): void {

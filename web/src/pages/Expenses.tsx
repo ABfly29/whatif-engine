@@ -15,6 +15,7 @@ import { Button } from "../components/ui/Button";
 import { Disclosure } from "../components/ui/Disclosure";
 import { ExpenseAssumptions, ExpenseResults } from "../components/expenses/ExpenseResults";
 import { ExpenseInputs } from "../components/expenses/ExpenseInputs";
+import { ExpenseReportDownload } from "../components/expenses/ExpenseReportDownload";
 import {
   CalculateBar,
   CalculatePrompt,
@@ -124,9 +125,11 @@ export default function Expenses() {
 
           {latest && (
             <div className="stack" data-stale={stale || calc.busy}>
-              {stale && <StaleNotice />}
+              {stale && <StaleNotice extra="PDF download is paused until then." />}
               {/* Labels and figures come from the request that was calculated, not the form. */}
               <ExpenseResults data={latest.data} request={latest.request} />
+              {/* Only for a result that matches the inputs on screen; built from the calculated request. */}
+              {isCurrent && <ExpenseReportDownload request={latest.request} result={latest.data} />}
               <Disclosure title="Assumptions and limitations" defaultOpen>
                 <ExpenseAssumptions request={latest.request} />
               </Disclosure>
