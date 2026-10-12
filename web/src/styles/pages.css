@@ -48,6 +48,10 @@
   grid-auto-flow: column;
   grid-auto-columns: max-content;
   overflow-x: auto;
+  /* Containing block for the absolutely positioned .visually-hidden status text, so
+     this scroll box clips it. Without it the last label's hidden text sticks out and
+     widens the whole page on narrow screens. */
+  position: relative;
   display: grid;
   gap: var(--s-1);
 }
