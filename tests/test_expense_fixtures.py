@@ -58,6 +58,7 @@ def test_fixtures_cover_the_cases_the_report_must_handle():
         "negative_surplus",
         "cash_negative",
         "heavy_share",
+        "low_liquidity",
     } <= codes
     assert {f["response"]["horizon_years"] for f in stored.values()} == {1, 3, 5}
     assert any(f["request"]["payment_method"] == "cash" for f in stored.values())

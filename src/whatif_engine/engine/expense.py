@@ -42,6 +42,12 @@ MAX_TENURE_MONTHS = 240
 # A prompt to look closer, not a verdict: the purchase uses at least this
 # share of the monthly amount the person otherwise saves.
 STRAIN_SHARE = Decimal("0.5")
+# Also a prompt, not a verdict: after the purchase, liquid cash would cover less than this many
+# months of the household's monthly outgoings (household expenses + running costs + EMI). One month
+# is the floor below which one unexpected bill or a late payday cannot be absorbed. It is far lower
+# than the 3-6 months usually advised for an emergency fund, which people can declare separately.
+# It is a multiple of the person's own spending, never a share of their salary.
+LOW_LIQUIDITY_MONTHS = Decimal("1")
 
 SCENARIOS = ("buy_now", "delay", "cheaper")
 
@@ -140,6 +146,7 @@ class Caution:
     code: str
     month: int | None = None
     amount: Decimal | None = None
+    cover_months: Decimal | None = None  # months of outgoings the cash covers (low_liquidity)
 
 
 @dataclass(frozen=True)
@@ -158,6 +165,11 @@ class ScenarioResult:
     cover_months: Decimal | None
     emergency_fund_shortfall: Decimal
     purchase_share_of_surplus: Decimal | None
+    # Negative liquid cash over the 60-month projection. This model charges no interest on it.
+    peak_shortfall: Decimal  # the largest amount below zero (0 if cash never goes negative)
+    peak_shortfall_month: int | None  # month of that low point (0 = right after the upfront payment)
+    months_negative: int  # months 1-60 that end below zero
+    negative_at_end: bool  # still below zero in month 60
     snapshots: tuple[Snapshot, ...]
     warnings: tuple[Caution, ...]
 
@@ -331,6 +343,13 @@ def _snapshots(run: _Run, base: _Run) -> tuple[Snapshot, ...]:
     return tuple(out)
 
 
+_LIQUIDITY_CODES = ("insufficient_savings", "below_emergency_fund", "cash_negative")
+
+
+def warnings_have_liquidity(warnings: list[Caution]) -> bool:
+    return any(w.code in _LIQUIDITY_CODES for w in warnings)
+
+
 def _result(inputs: ExpenseInputs, run: _Run, base: _Run) -> ScenarioResult:
     plan = run.plan
     start = 1 if plan.month is None else plan.month + 1
@@ -379,6 +398,29 @@ def _result(inputs: ExpenseInputs, run: _Run, base: _Run) -> ScenarioResult:
     if first_negative is not None and not insufficient:
         warnings.append(Caution("cash_negative", month=first_negative))
 
+    # How far below zero cash goes, and for how long (disclosure only; no interest is charged on it).
+    peak = max((-c for c in run.cash if c < 0), default=ZERO)
+    peak_month = next((m for m, c in enumerate(run.cash) if c < 0 and -c == peak), None)
+    months_negative = sum(1 for m in range(1, MAX_MONTHS + 1) if run.cash[m] < 0)
+
+    # Critically low liquid cash: the lowest balance from the purchase to the end of the selected
+    # horizon covers under LOW_LIQUIDITY_MONTHS of outgoings. Raised only when no other liquidity
+    # warning already describes the situation, so one scenario never gets two of them.
+    if plan.month is not None and outgoings > 0 and not warnings_have_liquidity(warnings):
+        end = max(plan.month, inputs.horizon_years * 12)
+        window = run.cash[plan.month : end + 1]
+        lowest = min(window)
+        if 0 <= lowest < outgoings * LOW_LIQUIDITY_MONTHS:
+            at = plan.month + window.index(lowest)
+            warnings.append(
+                Caution(
+                    "low_liquidity",
+                    month=None if at == plan.month else at,
+                    amount=lowest,
+                    cover_months=lowest / outgoings,
+                )
+            )
+
     return ScenarioResult(
         key=plan.key,
         purchase_month=plan.month,
@@ -394,6 +436,10 @@ def _result(inputs: ExpenseInputs, run: _Run, base: _Run) -> ScenarioResult:
         cover_months=cover,
         emergency_fund_shortfall=shortfall,
         purchase_share_of_surplus=share,
+        peak_shortfall=peak,
+        peak_shortfall_month=peak_month,
+        months_negative=months_negative,
+        negative_at_end=run.cash[MAX_MONTHS] < 0,
         snapshots=_snapshots(run, base),
         warnings=tuple(warnings),
     )

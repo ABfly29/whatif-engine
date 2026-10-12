@@ -1,7 +1,12 @@
 // Wording shared by the on-screen results and the PDF report, so the two never drift apart.
 // Pure: no React and no PDF library, so it is safe to load inside the report worker.
-import { fractionToPercent, inr } from "./format";
-import type { ExpenseRequest, ExpenseScenarioKey, ExpenseWarning } from "./types";
+import { fractionToPercent, inr, monthsLabel } from "./format";
+import type {
+  ExpenseRequest,
+  ExpenseScenario,
+  ExpenseScenarioKey,
+  ExpenseWarning,
+} from "./types";
 
 export function scenarioLabels(delayMonths: number): Record<ExpenseScenarioKey, string> {
   return {
@@ -12,19 +17,59 @@ export function scenarioLabels(delayMonths: number): Record<ExpenseScenarioKey, 
   };
 }
 
-export function warningText(w: ExpenseWarning, label: string): string {
+/** The parts of a scenario its warnings refer to. */
+export type WarningContext = Pick<
+  ExpenseScenario,
+  "purchase_month" | "peak_shortfall" | "peak_shortfall_month" | "months_negative" | "negative_at_end"
+>;
+
+/**
+ * When cash goes below zero: how far, for how long, and that no interest is counted on it.
+ * The model does not charge borrowing costs on a negative balance, so the real cost is higher.
+ */
+function negativeCashNote(s?: WarningContext): string {
+  if (!s || Number(s.peak_shortfall) <= 0) return "";
+  const peak = inr(s.peak_shortfall);
+  const when = s.peak_shortfall_month === 0 ? "right after the upfront payment" : `in month ${s.peak_shortfall_month}`;
+  const duration =
+    s.months_negative === 0
+      ? " and is cleared within the first month"
+      : `, and cash stays below zero for ${s.months_negative} ${s.months_negative === 1 ? "month" : "months"}${
+          s.negative_at_end ? " (still below zero at the end of the 5-year projection)" : ""
+        }`;
+  return ` The shortfall peaks at ${peak} ${when}${duration}. This model charges no interest on a negative balance, so real borrowing costs would be higher.`;
+}
+
+/**
+ * The sentence for one warning. `context` is the scenario the warning belongs to: it says whether
+ * the purchase is immediate or delayed, and how deep and long any negative cash is.
+ */
+export function warningText(w: ExpenseWarning, label: string, context?: WarningContext): string {
   const amount = Number(w.amount ?? 0);
   switch (w.code) {
     case "insufficient_savings":
-      return `${label}: the upfront payment is ${inr(amount)} more than your liquid savings.`;
+      return `${label}: the upfront payment is ${inr(amount)} more than your liquid savings.${negativeCashNote(context)}`;
     case "below_emergency_fund":
       return `${label}: paying upfront leaves you ${inr(amount)} below the emergency fund you set aside.`;
     case "negative_surplus":
       return `${label}: after the purchase costs you would spend ${inr(-amount)} a month more than you earn.`;
-    case "heavy_share":
-      return `${label}: the purchase costs would take ${fractionToPercent(String(amount))} of what you currently save each month.`;
+    case "heavy_share": {
+      // For a delayed purchase the share is measured against the saving at the purchase date
+      // (after the pay and cost changes entered), not today's.
+      const delayed = (context?.purchase_month ?? 0) > 0;
+      return `${label}: the purchase costs would take ${fractionToPercent(String(amount))} of what you ${
+        delayed ? "would save then (per month)" : "currently save each month"
+      }.`;
+    }
     case "cash_negative":
-      return `${label}: your cash balance drops below zero in month ${w.month}.`;
+      return `${label}: your cash balance drops below zero in month ${w.month}.${negativeCashNote(context)}`;
+    case "low_liquidity": {
+      const cover = monthsLabel(w.cover_months ?? 0);
+      const where =
+        w.month === null ? "after the upfront payment you would have" : `your liquid savings would fall to`;
+      const when = w.month === null ? "" : ` in month ${w.month}`;
+      return `${label}: ${where} ${inr(amount)}${w.month === null ? " in liquid savings" : ""}${when}, about ${cover} of your monthly spending (household expenses, running costs and EMI). Under one month is critically low.`;
+    }
   }
 }
 

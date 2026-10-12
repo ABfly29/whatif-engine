@@ -41,6 +41,10 @@
    "cover_months": "4.81",
    "emergency_fund_shortfall": "0.00",
    "purchase_share_of_surplus": null,
+   "peak_shortfall": "0.00",
+   "peak_shortfall_month": null,
+   "months_negative": 0,
+   "negative_at_end": false,
    "snapshots": [
     {
      "year": 1,
@@ -103,6 +107,10 @@
     "cover_months": "0.00",
     "emergency_fund_shortfall": "250000.00",
     "purchase_share_of_surplus": "3.3935",
+    "peak_shortfall": "1140692.97",
+    "peak_shortfall_month": 60,
+    "months_negative": 60,
+    "negative_at_end": true,
     "snapshots": [
      {
       "year": 1,
@@ -151,12 +159,14 @@
      {
       "code": "insufficient_savings",
       "month": null,
-      "amount": "50000.00"
+      "amount": "50000.00",
+      "cover_months": null
      },
      {
       "code": "negative_surplus",
       "month": null,
-      "amount": "-19147.81"
+      "amount": "-19147.81",
+      "cover_months": null
      }
     ]
    },
@@ -175,6 +185,10 @@
     "cover_months": "0.00",
     "emergency_fund_shortfall": "209408.52",
     "purchase_share_of_surplus": "3.4418",
+    "peak_shortfall": "991081.50",
+    "peak_shortfall_month": 60,
+    "months_negative": 55,
+    "negative_at_end": true,
     "snapshots": [
      {
       "year": 1,
@@ -223,12 +237,14 @@
      {
       "code": "insufficient_savings",
       "month": null,
-      "amount": "9408.52"
+      "amount": "9408.52",
+      "cover_months": null
      },
      {
       "code": "negative_surplus",
       "month": null,
-      "amount": "-19534.24"
+      "amount": "-19534.24",
+      "cover_months": null
      }
     ]
    },
@@ -247,6 +263,10 @@
     "cover_months": "0.70",
     "emergency_fund_shortfall": "150000.00",
     "purchase_share_of_surplus": "2.4540",
+    "peak_shortfall": "575229.25",
+    "peak_shortfall_month": 60,
+    "months_negative": 55,
+    "negative_at_end": true,
     "snapshots": [
      {
       "year": 1,
@@ -295,17 +315,20 @@
      {
       "code": "below_emergency_fund",
       "month": null,
-      "amount": "150000.00"
+      "amount": "150000.00",
+      "cover_months": null
      },
      {
       "code": "negative_surplus",
       "month": null,
-      "amount": "-11631.88"
+      "amount": "-11631.88",
+      "cover_months": null
      },
      {
       "code": "cash_negative",
       "month": 6,
-      "amount": null
+      "amount": null,
+      "cover_months": null
      }
     ]
    }

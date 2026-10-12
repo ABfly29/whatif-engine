@@ -6,6 +6,8 @@ import App from "../src/App";
 import { resetEngineClient } from "../src/lib/engineClient";
 import type { ExpenseResponse } from "../src/lib/types";
 import fixture from "./fixtures/expense.json";
+import lowcashFixture from "./fixtures/expense-lowcash.json";
+import strainFixture from "./fixtures/expense-strain.json";
 import { FakeWorker } from "./fakeWorker";
 
 vi.mock("../src/lib/api", async (orig) => {
@@ -128,7 +130,11 @@ describe("major expense page", () => {
 
   it("surfaces warnings as prompts, never as a verdict", async () => {
     await open();
-    expect(screen.getAllByText(/the purchase costs would take .*% of what you currently save/).length).toBe(3);
+    // Buying now and the cheaper car start immediately, so they compare with what you save today.
+    expect(screen.getAllByText(/the purchase costs would take .*% of what you currently save/).length).toBe(2);
+    // Waiting 12 months compares with what you would save then, and the percentage keeps its precision.
+    expect(screen.getByText(/Buy in 12 months: the purchase costs would take 61\.16% of what you would save then/)).toBeInTheDocument();
+    expect(screen.getByText(/Buy now: the purchase costs would take 62\.46% of what you currently save/)).toBeInTheDocument();
     expect(screen.queryByText(/affordable|safe to buy|you can afford it|can comfortably/i)).toBeNull();
   });
 
@@ -406,5 +412,41 @@ describe("PDF report button in the simulator", () => {
     expect(reportCalls[0].request.purchase_price).toBe("1100000");
     expect(reportCalls[0].result).toBe(second);
     expect(reportCalls[0].result).not.toBe(RESPONSE);
+  });
+});
+
+describe("cash warnings on the page", () => {
+  const showing = async (response: ExpenseResponse) => {
+    vi.mocked(simulateExpense).mockReset().mockResolvedValue(response);
+    await open();
+  };
+  const warning = (start: string) => screen.getByText((content) => content.startsWith(start));
+
+  it("flags critically low cash after the purchase even though no emergency fund was entered", async () => {
+    await showing(lowcashFixture.response as ExpenseResponse);
+    const now = warning("Buy now: after the upfront payment you would have ₹5,000");
+    expect(now).toHaveTextContent("in liquid savings, about 0.1 months of your monthly spending");
+    expect(now).toHaveTextContent("Under one month is critically low.");
+    expect(warning("Cheaper option now: after the upfront payment you would have ₹65,000")).toBeInTheDocument();
+    // Waiting leaves plenty of cash, so that option is not flagged.
+    expect(screen.queryByText((c) => c.startsWith("Buy in 12 months") && c.includes("critically low"))).toBeNull();
+    // It is a prompt, not a verdict, and says nothing about salary.
+    expect(now.textContent).not.toMatch(/salary|income/i);
+  });
+
+  it("uses 'what you would save then' for the delayed purchase and the precise percentage", async () => {
+    await showing(lowcashFixture.response as ExpenseResponse);
+    expect(warning("Buy in 12 months: the purchase costs would take 61.16%")).toHaveTextContent(
+      "of what you would save then (per month).",
+    );
+    expect(warning("Buy now: the purchase costs would take 62.46%")).toHaveTextContent("of what you currently save each month.");
+  });
+
+  it("explains how deep and how long cash stays negative, and that no interest is charged", async () => {
+    await showing(strainFixture.response as ExpenseResponse);
+    const now = warning("Buy now: the upfront payment is ₹50,000 more than your liquid savings.");
+    expect(now).toHaveTextContent("The shortfall peaks at ₹11,40,693 in month 60");
+    expect(now).toHaveTextContent("cash stays below zero for 60 months (still below zero at the end of the 5-year projection)");
+    expect(now).toHaveTextContent("This model charges no interest on a negative balance, so real borrowing costs would be higher.");
   });
 });

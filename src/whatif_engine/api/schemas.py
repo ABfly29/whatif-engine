@@ -168,6 +168,7 @@ class ExpenseWarning(_Model):
     code: str
     month: int | None
     amount: Decimal | None
+    cover_months: Decimal | None
 
 
 class ExpenseScenario(_Model):
@@ -185,6 +186,10 @@ class ExpenseScenario(_Model):
     cover_months: Decimal | None
     emergency_fund_shortfall: Decimal
     purchase_share_of_surplus: Decimal | None
+    peak_shortfall: Decimal
+    peak_shortfall_month: int | None
+    months_negative: int
+    negative_at_end: bool
     snapshots: list[ExpenseSnapshot]
     warnings: list[ExpenseWarning]
 

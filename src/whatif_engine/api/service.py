@@ -162,13 +162,19 @@ def sensitivity(req: SensitivityRequest) -> SensitivityResponse:
 _SHARE = Decimal("0.0001")
 
 
-def _round_tree(value, key: str = ""):
-    """Round every Decimal in a nested result to paise (shares to 0.01%)."""
+def _round_tree(value, key: str = "", fine: bool = False):
+    """Round every Decimal in a nested result to paise, and shares to 0.01%.
+
+    A share is a fraction, not money: the scenario's purchase_share_of_surplus and the amount
+    carried by a heavy_share warning (the same number) keep four decimals, so a percentage such
+    as 99.48% is not rounded to 99% on its way out.
+    """
     if isinstance(value, Decimal):
-        return value.quantize(_SHARE if key == "purchase_share_of_surplus" else PAISE,
-                              rounding=ROUND_HALF_EVEN)
+        places = _SHARE if fine or key == "purchase_share_of_surplus" else PAISE
+        return value.quantize(places, rounding=ROUND_HALF_EVEN)
     if isinstance(value, dict):
-        return {k: _round_tree(v, k) for k, v in value.items()}
+        share = value.get("code") == "heavy_share"
+        return {k: _round_tree(v, k, share and k == "amount") for k, v in value.items()}
     if isinstance(value, (list, tuple)):
         return [_round_tree(v, key) for v in value]
     return value

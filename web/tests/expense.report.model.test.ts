@@ -160,7 +160,8 @@ describe("expense report model", () => {
     const { request, result } = loadExpenseFixture("expense-strain");
     const m = model("expense-strain");
     const labels = scenarioLabels(request.delay_months);
-    const expected = result.scenarios.flatMap((s) => s.warnings.map((w) => warningText(w, labels[s.key])));
+    // The same function the results screen uses, given the same scenario, so the PDF and the screen agree.
+    const expected = result.scenarios.flatMap((s) => s.warnings.map((w) => warningText(w, labels[s.key], s)));
     expect(m.warnings).toEqual(expected);
     const joined = m.warnings.join(" ");
     for (const phrase of [

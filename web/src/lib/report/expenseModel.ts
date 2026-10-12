@@ -129,8 +129,8 @@ export function buildExpenseReportModel(input: ExpenseReportInput): ExpenseRepor
   ];
 
   const warnings = [
-    ...base.warnings.map((w) => warningText(w, "Even without a purchase")),
-    ...result.scenarios.flatMap((s) => s.warnings.map((w) => warningText(w, labels[s.key]))),
+    ...base.warnings.map((w) => warningText(w, "Even without a purchase", base)),
+    ...result.scenarios.flatMap((s) => s.warnings.map((w) => warningText(w, labels[s.key], s))),
   ];
 
   // ---- Page 2: comparison tables ----

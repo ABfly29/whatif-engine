@@ -68,7 +68,20 @@ STRAIN = {
     "horizon_years": 1,
 }
 
-FIXTURES = {"expense": REQUEST, "expense-cash": CASH, "expense-strain": STRAIN}
+# Enough to pay the down payment but little more: critically low cash after buying now, and
+# just under one month of spending after buying the cheaper option.
+LOWCASH = {
+    **REQUEST,
+    "liquid_savings": "205000",
+    "emergency_fund": "0",
+}
+
+FIXTURES = {
+    "expense": REQUEST,
+    "expense-cash": CASH,
+    "expense-strain": STRAIN,
+    "expense-lowcash": LOWCASH,
+}
 
 
 def main() -> int:

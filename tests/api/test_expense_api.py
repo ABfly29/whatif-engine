@@ -108,3 +108,87 @@ def test_total_depreciation_is_accepted():
     assert client.post(URL, json=body).status_code == 200
     out = json.loads(service.handle("expense", json.dumps(body)))
     assert out["ok"] is True
+
+
+# ---------- fixes confirmed by the adversarial QA pass ----------
+
+
+def early_career(**overrides):
+    """QA profile 1: Rs 35,000 take-home, Rs 22,000 expenses, Rs 1,50,000 saved, Rs 8,00,000 car at 20% down, 10%."""
+    profile = {
+        "monthly_take_home": "35000", "monthly_household_expenses": "22000", "liquid_savings": "150000",
+        "emergency_fund": "0", "purchase_price": "800000", "down_payment": "160000", "loan_annual_rate": "0.10",
+        "fuel": "0", "servicing": "0", "parking_tolls": "0", "other_running": "0", "annual_insurance": "0",
+        "delay_months": 24, "alternative_price": "600000", "horizon_years": 5,
+    }
+    return payload(**{**profile, **overrides})
+
+
+def scenario_of(data, key):
+    return next(x for x in data["scenarios"] if x["key"] == key)
+
+
+def test_heavy_share_keeps_its_percentage_precision_through_serialization():
+    data = client.post(URL, json=early_career()).json()
+    delayed, cheaper = scenario_of(data, "delay"), scenario_of(data, "cheaper")
+    # 99.48% and 78.45%: the warning carries the same four-decimal fraction as the scenario field,
+    # not a paise-rounded 0.99 / 0.78.
+    assert delayed["purchase_share_of_surplus"] == "0.9948"
+    assert next(w for w in delayed["warnings"] if w["code"] == "heavy_share")["amount"] == "0.9948"
+    assert cheaper["purchase_share_of_surplus"] == "0.7845"
+    assert next(w for w in cheaper["warnings"] if w["code"] == "heavy_share")["amount"] == "0.7845"
+
+
+def test_money_is_still_rounded_to_paise_next_to_the_precise_share():
+    data = client.post(URL, json=early_career()).json()
+    delayed = scenario_of(data, "delay")
+    assert Decimal(delayed["emi"]).as_tuple().exponent == -2
+    assert Decimal(delayed["surplus_after"]).as_tuple().exponent == -2
+    negative = next(w for w in scenario_of(data, "buy_now")["warnings"] if w["code"] == "negative_surplus")
+    assert negative["amount"] == "-598.11"  # money, not a share
+
+
+def test_the_same_precision_over_the_browser_entry_point():
+    body = early_career()
+    http = client.post(URL, json=body).json()
+    browser = json.loads(service.handle("expense", json.dumps(body)))["data"]
+    assert browser == http
+    delayed = scenario_of(browser, "delay")
+    assert next(w for w in delayed["warnings"] if w["code"] == "heavy_share")["amount"] == "0.9948"
+
+
+def test_the_low_liquidity_warning_carries_the_cash_and_the_months_of_cover():
+    data = client.post(URL, json=early_career()).json()
+    cheaper = scenario_of(data, "cheaper")  # Rs 30,000 left against Rs 22,000 + an EMI of Rs 10,199
+    w = next(w for w in cheaper["warnings"] if w["code"] == "low_liquidity")
+    assert w["amount"] == "30000.00"
+    assert w["cover_months"] == "0.93"
+    assert w["month"] is None  # the low point is right after the upfront payment
+    # Both prompts are shown, since they say different things.
+    assert {x["code"] for x in cheaper["warnings"]} == {"heavy_share", "low_liquidity"}
+
+
+def test_low_liquidity_never_shares_a_scenario_with_insufficient_savings():
+    data = client.post(URL, json=early_career()).json()
+    buy = scenario_of(data, "buy_now")  # Rs 10,000 short on day one
+    assert {w["code"] for w in buy["warnings"]} == {"insufficient_savings", "negative_surplus"}
+
+
+def test_negative_cash_is_described_by_its_depth_duration_and_end_state():
+    data = client.post(URL, json=early_career()).json()
+    buy = scenario_of(data, "buy_now")
+    assert buy["peak_shortfall"] == "17177.30"
+    assert buy["peak_shortfall_month"] == 12
+    assert buy["months_negative"] == 32
+    assert buy["negative_at_end"] is False
+    delayed = scenario_of(data, "delay")
+    assert (delayed["peak_shortfall"], delayed["peak_shortfall_month"], delayed["months_negative"]) == ("0.00", None, 0)
+    assert data["baseline"]["months_negative"] == 0
+
+
+def test_a_scenario_that_never_recovers_says_so():
+    body = early_career(monthly_take_home="22000", liquid_savings="161000")  # no monthly surplus at all
+    buy = scenario_of(client.post(URL, json=body).json(), "buy_now")
+    assert buy["negative_at_end"] is True
+    assert buy["months_negative"] > 0
+    assert Decimal(buy["peak_shortfall"]) > 0

@@ -250,11 +250,11 @@ export function ExpenseResults({
   const years = [1, 3, 5];
   const later = data.scenarios.find((s) => s.key === "delay")!;
   const warnings = data.scenarios.flatMap((s) =>
-    s.warnings.map((w) => ({ key: `${s.key}-${w.code}`, text: warningText(w, labels[s.key]) })),
+    s.warnings.map((w) => ({ key: `${s.key}-${w.code}`, text: warningText(w, labels[s.key], s) })),
   );
   const baseWarnings = data.baseline.warnings.map((w) => ({
     key: `base-${w.code}`,
-    text: warningText(w, "Even without a purchase"),
+    text: warningText(w, "Even without a purchase", data.baseline),
   }));
 
   return (

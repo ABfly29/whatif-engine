@@ -6,6 +6,7 @@ exact ``Fraction`` EMI, or a plain month-by-month loop written here.
 
 from decimal import Decimal as D
 from fractions import Fraction
+from itertools import pairwise
 
 import pytest
 
@@ -466,3 +467,180 @@ def test_price_rise_applies_for_exactly_the_delay_period():
     close(scenario(r, "delay").price, D("1210000"))  # 10,00,000 * 1.1^2
     r6 = simulate_major_expense(make(annual_price_increase=D("0.10"), delay_months=6))
     close(scenario(r6, "delay").price, D("1000000") * D("1.1") ** (D(1) / 2), D("0.000001"))
+
+
+# ---------- low liquid cash after the purchase ----------
+#
+# The check: from the purchase to the end of the selected horizon, the lowest liquid balance covers
+# less than ONE month of the household's outgoings (household expenses + running costs + EMI).
+# It is a multiple of spending, never a share of salary, and it does not need an emergency fund.
+
+
+def low_liquidity(s):
+    return next((w for w in s.warnings if w.code == "low_liquidity"), None)
+
+
+def buy_leaving(left, **over):
+    """A cash purchase of Rs 10,00,000 that leaves `left` in liquid savings. Spending is Rs 60,000 a month."""
+    result = simulate_major_expense(make(liquid_savings=D("1000000") + D(left), **over))
+    return scenario(result, "buy_now"), result
+
+
+@pytest.mark.parametrize(
+    ("left", "months"),
+    [
+        (0, "0"),  # nothing left at all
+        (1000, "1000/60000"),  # Rs 1,000 left
+        (20000, "20000/60000"),  # a third of a month
+        (45000, "45000/60000"),  # three quarters of a month
+    ],
+)
+def test_less_than_one_month_of_cash_after_the_purchase_is_flagged(left, months):
+    s, _ = buy_leaving(left)
+    w = low_liquidity(s)
+    assert w is not None
+    assert w.amount == D(left)
+    assert w.month is None  # the low point is right after the upfront payment
+    num, _, den = months.partition("/")
+    close(w.cover_months, D(num) / D(den or 1))
+    assert {x.code for x in s.warnings} == {"low_liquidity"}  # alone, with no emergency fund entered
+
+
+def test_exactly_one_month_and_adequate_cash_are_not_flagged():
+    for left in (60000, 60001, 600000):
+        s, _ = buy_leaving(left)
+        assert low_liquidity(s) is None, left
+        assert s.warnings == ()
+
+
+def test_the_check_works_with_the_emergency_fund_left_at_zero():
+    s, _ = buy_leaving(20000, emergency_fund=D("0"))
+    assert low_liquidity(s) is not None
+
+
+def test_a_declared_emergency_fund_is_reported_once_not_twice():
+    below = buy_leaving(45000, emergency_fund=D("100000"))[0]
+    assert {w.code for w in below.warnings} == {"below_emergency_fund"}  # the more specific one
+    # An emergency fund that is met does not stop the spending-based check.
+    met = buy_leaving(45000, emergency_fund=D("30000"))[0]
+    assert {w.code for w in met.warnings} == {"low_liquidity"}
+
+
+def test_insufficient_savings_is_never_joined_by_another_liquidity_warning():
+    s, _ = buy_leaving(-10000)
+    assert {w.code for w in s.warnings} == {"insufficient_savings"}
+
+
+def test_at_most_one_of_the_two_cash_warnings_for_any_amount_left():
+    for left in (-500000, -1, 0, 1, 1000, 59999, 60000, 100000, 1000000):
+        for fund in (0, 40000):
+            s, _ = buy_leaving(left, emergency_fund=D(fund))
+            codes = {w.code for w in s.warnings}
+            if "low_liquidity" in codes:
+                assert not codes & {"insufficient_savings", "below_emergency_fund", "cash_negative"}
+            if "insufficient_savings" in codes:
+                assert not codes & {"low_liquidity", "below_emergency_fund", "cash_negative"}
+
+
+def test_the_threshold_follows_spending_not_salary():
+    # Same cash left, same salary: the check tracks the household's monthly outgoings.
+    low_spend = buy_leaving(100000, monthly_household_expenses=D("60000"), monthly_take_home=D("500000"))[0]
+    high_spend = buy_leaving(100000, monthly_household_expenses=D("120000"), monthly_take_home=D("500000"))[0]
+    assert low_liquidity(low_spend) is None  # 1.67 months of Rs 60,000
+    assert low_liquidity(high_spend) is not None  # 0.83 months of Rs 1,20,000
+    # And a tenfold salary changes nothing when spending is the same.
+    for pay in ("100000", "1000000"):
+        assert low_liquidity(buy_leaving(45000, monthly_take_home=D(pay))[0]) is not None
+        assert low_liquidity(buy_leaving(100000, monthly_take_home=D(pay))[0]) is None
+
+
+def test_the_check_counts_the_emi_and_running_costs_as_spending():
+    # No loan: Rs 60,000 of outgoings. With a loan, the EMI raises the monthly outgoings, so the same
+    # Rs 70,000 left is under a month's spending only when the EMI is included.
+    cash = simulate_major_expense(make(liquid_savings=D("1070000")))
+    loan = simulate_major_expense(
+        make(liquid_savings=D("270000"), financed=True, down_payment=D("200000"), loan_annual_rate=D("0.09"))
+    )
+    assert low_liquidity(scenario(cash, "buy_now")) is None  # 70,000 / 60,000 = 1.17 months
+    w = low_liquidity(scenario(loan, "buy_now"))  # 70,000 / (60,000 + EMI of ~16,607) = 0.91 months
+    assert w is not None
+    close(w.cover_months, D("70000") / (D("60000") + monthly_emi(D("800000"), D("0.09"), 60)))
+
+
+def test_the_lowest_cash_over_the_selected_horizon_is_what_counts():
+    # Pay is Rs 1,000 a month short of spending, so Rs 1,00,000 left slowly drains and never reaches zero.
+    over = {"monthly_take_home": D("59000")}
+    five = buy_leaving(100000, horizon_years=5, **over)[0]
+    w = low_liquidity(five)
+    assert w is not None
+    assert w.month == 60 and w.amount == D("40000")
+    close(w.cover_months, D("40000") / D("60000"))
+    # Over three years the lowest balance is Rs 64,000: more than a month's spending, so no warning.
+    assert low_liquidity(buy_leaving(100000, horizon_years=3, **over)[0]) is None
+
+
+def test_cash_that_goes_negative_is_reported_as_negative_not_as_low():
+    s, _ = buy_leaving(50000, monthly_take_home=D("50000"))  # drains Rs 10,000 a month and goes below zero
+    codes = {w.code for w in s.warnings}
+    assert "cash_negative" in codes and "low_liquidity" not in codes
+
+
+def test_a_delayed_purchase_is_judged_at_its_own_purchase_date():
+    r = simulate_major_expense(make(delay_months=12, liquid_savings=D("530000")))
+    later = scenario(r, "delay")  # 5,30,000 + 12 x 40,000 - 10,00,000 = Rs 10,000 left in month 12
+    w = low_liquidity(later)
+    assert w is not None and w.amount == D("10000") and w.month is None
+    # Buying now is simply not possible with Rs 5,30,000: that is the other warning.
+    assert {x.code for x in scenario(r, "buy_now").warnings} == {"insufficient_savings"}
+
+
+def test_the_no_purchase_baseline_never_gets_a_purchase_liquidity_warning():
+    r = simulate_major_expense(make(liquid_savings=D("1020000")))
+    assert low_liquidity(r.baseline) is None
+
+
+def test_no_spending_means_no_threshold():
+    s, _ = buy_leaving(0, monthly_household_expenses=D("0"))
+    assert low_liquidity(s) is None  # nothing to cover, so no months-of-cover to fall short of
+
+
+# ---------- negative cash: how deep, how long, and no interest ----------
+
+
+def test_cash_that_never_goes_negative_reports_no_shortfall():
+    s, _ = buy_leaving(500000)
+    assert (s.peak_shortfall, s.peak_shortfall_month, s.months_negative, s.negative_at_end) == (0, None, 0, False)
+
+
+def test_a_draining_balance_reports_its_peak_its_duration_and_that_it_never_recovers():
+    # Rs 10,000 a month short: Rs 50,000 left lasts 5 months, then the deficit grows with no end.
+    s, _ = buy_leaving(50000, monthly_take_home=D("50000"))
+    assert s.months_negative == 55  # months 6 to 60
+    assert s.peak_shortfall == D("550000") and s.peak_shortfall_month == 60  # 50,000 - 60 x 10,000
+    assert s.negative_at_end is True
+    assert next(w for w in s.warnings if w.code == "cash_negative").month == 6
+
+
+def test_a_negative_balance_is_not_charged_interest():
+    # With a 20% return on positive savings, a negative balance still moves by exactly the monthly gap.
+    r = simulate_major_expense(
+        make(monthly_take_home=D("50000"), liquid_savings=D("1050000"), savings_return=D("0.2"))
+    )
+    path = [m.liquid["buy_now"] for m in r.months]
+    negative = [c for c in path if c < 0]
+    assert len(negative) > 10
+    assert all(close(b - a, D("-10000")) is None for a, b in pairwise(negative))
+
+
+def test_a_shortfall_that_recovers_reports_when_and_that_it_ends():
+    s, _ = buy_leaving(-100000)  # Rs 1,00,000 short on day one, Rs 40,000 a month surplus to repair it
+    assert s.peak_shortfall == D("100000") and s.peak_shortfall_month == 0
+    assert s.months_negative == 2  # months 1 and 2 still below zero, then back above
+    assert s.negative_at_end is False
+    assert {w.code for w in s.warnings} == {"insufficient_savings"}
+
+
+def test_the_baseline_reports_its_own_negative_cash_too():
+    r = simulate_major_expense(make(monthly_take_home=D("50000"), liquid_savings=D("100000")))
+    b = r.baseline
+    assert b.months_negative == 50 and b.peak_shortfall == D("500000") and b.negative_at_end is True

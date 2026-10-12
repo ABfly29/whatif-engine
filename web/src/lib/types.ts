@@ -136,9 +136,13 @@ export interface ExpenseWarning {
     | "below_emergency_fund"
     | "negative_surplus"
     | "heavy_share"
-    | "cash_negative";
+    | "cash_negative"
+    | "low_liquidity";
   month: number | null;
+  /** Money, except for heavy_share where it is a fraction (0.9948 = 99.48%). */
   amount: string | null;
+  /** Months of monthly spending the cash covers (low_liquidity). */
+  cover_months: string | null;
 }
 
 export interface ExpenseScenario {
@@ -156,6 +160,12 @@ export interface ExpenseScenario {
   cover_months: string | null;
   emergency_fund_shortfall: string;
   purchase_share_of_surplus: string | null;
+  /** Largest amount below zero over the 60 months (0 if cash never goes negative). */
+  peak_shortfall: string;
+  /** Month of that low point; 0 means right after the upfront payment. */
+  peak_shortfall_month: number | null;
+  months_negative: number;
+  negative_at_end: boolean;
   snapshots: ExpenseSnapshot[];
   warnings: ExpenseWarning[];
 }

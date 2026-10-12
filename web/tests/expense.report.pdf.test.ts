@@ -162,6 +162,25 @@ describe("expense PDF report", () => {
     expect(text).not.toMatch(/-₹/);
   });
 
+  it("the low-cash warning and the negative-cash disclosure are printed, worded exactly as on screen", async () => {
+    // Low cash after the purchase (B3)
+    await build("expense-lowcash");
+    let text = everything();
+    const low = buildExpenseReportModel(input("expense-lowcash"));
+    expect(low.warnings.some((w) => w.includes("critically low"))).toBe(true);
+    for (const w of low.warnings) expect(text).toContain(w);
+    expect(text).toContain("you would have ₹5,000 in liquid savings, about 0.1 months of your monthly spending");
+    // Delayed vs immediate wording (B1) and the precise percentage (B2)
+    expect(text).toContain("62.46% of what you currently save each month");
+    expect(text).toContain("61.16% of what you would save then (per month)");
+    // Negative cash (disclosure)
+    drawn = [];
+    await build("expense-strain");
+    text = everything();
+    expect(text).toContain("The shortfall peaks at ₹11,40,693 in month 60");
+    expect(text).toContain("This model charges no interest on a negative balance");
+  });
+
   it("calm finances: says no warnings were triggered, without calling that safe", async () => {
     await build("expense-cash");
     const text = everything();

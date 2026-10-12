@@ -91,6 +91,33 @@ describe.skipIf(!have)("engine in Pyodide", () => {
     expect(out.data.months).toHaveLength(60);
   });
 
+  it("runs the QA fixes in the browser engine exactly as native Python does", () => {
+    // Early-career profile: Rs 35,000 take-home, Rs 22,000 expenses, Rs 1,50,000 saved, Rs 8,00,000 car at 10%.
+    const request = {
+      monthly_take_home: "35000",
+      monthly_household_expenses: "22000",
+      liquid_savings: "150000",
+      purchase_price: "800000",
+      payment_method: "loan",
+      down_payment: "160000",
+      loan_annual_rate: "0.10",
+      delay_months: 24,
+      alternative_price: "600000",
+      horizon_years: 5,
+    };
+    const out = JSON.parse(handle("expense", JSON.stringify(request)));
+    expect(out.ok).toBe(true);
+    const [buyNow, delay, cheaper] = out.data.scenarios;
+    // Values from native Python (whatif_engine.api.service.handle).
+    expect(delay.purchase_share_of_surplus).toBe("0.9948");
+    expect(delay.warnings.find((w: { code: string }) => w.code === "heavy_share").amount).toBe("0.9948");
+    expect(cheaper.warnings.find((w: { code: string }) => w.code === "heavy_share").amount).toBe("0.7845");
+    const low = cheaper.warnings.find((w: { code: string }) => w.code === "low_liquidity");
+    expect(low).toMatchObject({ amount: "30000.00", cover_months: "0.93", month: null });
+    expect(buyNow.warnings.map((w: { code: string }) => w.code)).toEqual(["insufficient_savings", "negative_surplus"]);
+    expect(buyNow).toMatchObject({ peak_shortfall: "17177.30", peak_shortfall_month: 12, months_negative: 32, negative_at_end: false });
+  });
+
   it("rejects an invalid expense request with the same shape of error", () => {
     const out = JSON.parse(handle("expense", JSON.stringify({ purchase_price: "-1" })));
     expect(out.ok).toBe(false);

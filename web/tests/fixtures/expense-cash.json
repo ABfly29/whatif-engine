@@ -41,6 +41,10 @@
    "cover_months": "41.67",
    "emergency_fund_shortfall": "0.00",
    "purchase_share_of_surplus": null,
+   "peak_shortfall": "0.00",
+   "peak_shortfall_month": null,
+   "months_negative": 0,
+   "negative_at_end": false,
    "snapshots": [
     {
      "year": 1,
@@ -103,6 +107,10 @@
     "cover_months": "20.98",
     "emergency_fund_shortfall": "0.00",
     "purchase_share_of_surplus": "0.1917",
+    "peak_shortfall": "0.00",
+    "peak_shortfall_month": null,
+    "months_negative": 0,
+    "negative_at_end": false,
     "snapshots": [
      {
       "year": 1,
@@ -164,6 +172,10 @@
     "cover_months": "36.31",
     "emergency_fund_shortfall": "0.00",
     "purchase_share_of_surplus": "0.1813",
+    "peak_shortfall": "0.00",
+    "peak_shortfall_month": null,
+    "months_negative": 0,
+    "negative_at_end": false,
     "snapshots": [
      {
       "year": 1,
@@ -225,6 +237,10 @@
     "cover_months": "25.17",
     "emergency_fund_shortfall": "0.00",
     "purchase_share_of_surplus": "0.1917",
+    "peak_shortfall": "0.00",
+    "peak_shortfall_month": null,
+    "months_negative": 0,
+    "negative_at_end": false,
     "snapshots": [
      {
       "year": 1,

@@ -3,7 +3,7 @@ import { join } from "node:path";
 import type { ExpenseRequest, ExpenseResponse } from "../src/lib/types";
 
 export type ExpenseFixture = { request: ExpenseRequest; result: ExpenseResponse };
-export const EXPENSE_FIXTURES = ["expense", "expense-cash", "expense-strain"] as const;
+export const EXPENSE_FIXTURES = ["expense", "expense-cash", "expense-strain", "expense-lowcash"] as const;
 export type ExpenseFixtureName = (typeof EXPENSE_FIXTURES)[number];
 
 /** Real engine output written by scripts/make_expense_fixture.py. */
