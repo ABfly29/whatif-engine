@@ -1,14 +1,21 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import { careerSensitivity, compareCareer, warmCalculator } from "../lib/api";
 import { getEngineStatus, subscribeEngineStatus } from "../lib/engineClient";
 import { BLANK, SAMPLE, isSample, toRequest, type FormState } from "../lib/form";
 import { decodeForm, scenarioLink } from "../lib/share";
+import type { CareerRequest, CareerResponse } from "../lib/types";
 import { SECTION_FIELDS, validate, type SectionId } from "../lib/validation";
 import { useApiQuery } from "../lib/useApiQuery";
+import { useCalculation } from "../lib/useCalculation";
 import { Button } from "../components/ui/Button";
 import { Disclosure } from "../components/ui/Disclosure";
 import { Stepper, type Step } from "../components/ui/Stepper";
+import {
+  CalculateBar,
+  CalculatePrompt,
+  StaleNotice,
+} from "../components/workspace/CalculateBar";
 import { EngineProgress } from "../components/workspace/EngineProgress";
 import { InputSections } from "../components/workspace/InputSections";
 import { ResultSummary } from "../components/workspace/ResultSummary";
@@ -25,6 +32,8 @@ const LABELS: Record<SectionId, string> = {
   transition: "Switching costs",
 };
 
+const SAMPLE_KEY = JSON.stringify(toRequest(SAMPLE));
+
 export default function Workspace() {
   // A shared link (#/app?curPay=...) opens with that scenario; otherwise the sample.
   const [searchParams] = useSearchParams();
@@ -39,13 +48,44 @@ export default function Workspace() {
   const request = useMemo(() => (hasErrors ? null : toRequest(form)), [form, hasErrors]);
   const key = request ? JSON.stringify(request) : null;
 
-  const comparison = useApiQuery(key, (s) => compareCareer(request!, s));
+  // Field errors appear once someone has tried to calculate, then follow their edits.
+  const [attempted, setAttempted] = useState(false);
+  const [focusErrors, setFocusErrors] = useState(0);
+  const shownErrors = attempted ? errors : {};
+
+  // Calculation happens only on submit. Editing the form never reaches the engine.
+  const calc = useCalculation<CareerRequest, CareerResponse>((r, signal) =>
+    compareCareer(r, signal),
+  );
+  const latest = calc.latest;
+  // A result is current only if it was computed from exactly what the form says now.
+  const isCurrent = latest !== null && latest.key === key;
+  const stale = latest !== null && !isCurrent;
+
+  // Sensitivity follows the calculated result, not the form, so typing never triggers it.
   const sensitivity = useApiQuery(
-    key,
-    (s) => careerSensitivity(request!, s),
-    500,
+    latest?.key ?? null,
+    (signal) => careerSensitivity(latest!.request, signal),
+    0,
     sensitivityOpen,
   );
+
+  const calculate = (event?: FormEvent) => {
+    event?.preventDefault();
+    if (calc.busy) return;
+    setAttempted(true);
+    if (!request) {
+      setFocusErrors((n) => n + 1);
+      return;
+    }
+    calc.submit(request);
+  };
+
+  // After a failed attempt, move focus to the first field that needs fixing.
+  useEffect(() => {
+    if (focusErrors === 0) return;
+    document.querySelector<HTMLElement>('.ws-inputs [aria-invalid="true"]')?.focus();
+  }, [focusErrors]);
 
   const copyLink = async () => {
     try {
@@ -60,24 +100,10 @@ export default function Workspace() {
 
   const steps: Step[] = (Object.keys(SECTION_FIELDS) as SectionId[]).map((id) => {
     const fields = SECTION_FIELDS[id] as readonly (keyof FormState)[];
-    const hasError = fields.some((f) => errors[f]);
+    const hasError = fields.some((f) => shownErrors[f]);
     const required = id === "current" ? form.curPay : id === "offer" ? form.newPay : "x";
     return { id, label: LABELS[id], hasError, done: !hasError && required.trim() !== "" };
   });
-
-  // The result may lag the form by the debounce delay. Only a result computed from
-  // exactly the inputs now on screen is safe to put in a report.
-  const freshResult =
-    comparison.status === "success" && comparison.key === key && request && !hasErrors
-      ? comparison.data
-      : null;
-
-  const result =
-    comparison.status === "success"
-      ? comparison.data
-      : comparison.status === "loading" || comparison.status === "error"
-        ? comparison.previous
-        : undefined;
 
   return (
     <div className="workspace container">
@@ -101,18 +127,20 @@ export default function Workspace() {
           <Button variant="ghost" small onClick={() => setForm(BLANK)}>
             Clear all
           </Button>
-          <Button variant="ghost" small onClick={copyLink}>
+          <Button variant="ghost" small onClick={copyLink} disabled={!isCurrent}>
             Copy link to this scenario
           </Button>
         </div>
         <p className="muted small" role="status">
-          {linkState === "copied"
-            ? "Link copied. Anyone with it can see these numbers; nothing is uploaded."
-            : linkState === "manual"
-              ? "Couldn't copy automatically. Select the link below and copy it."
-              : "Share a link that reopens this scenario. Your numbers stay in the link, not on a server."}
+          {!isCurrent
+            ? "Calculate first: a shared link always matches the result on screen."
+            : linkState === "copied"
+              ? "Link copied. Anyone with it can see these numbers; nothing is uploaded."
+              : linkState === "manual"
+                ? "Couldn't copy automatically. Select the link below and copy it."
+                : "Share a link that reopens this scenario. Your numbers stay in the link, not on a server."}
         </p>
-        {linkState === "manual" && (
+        {isCurrent && linkState === "manual" && (
           <input
             className="share-link"
             readOnly
@@ -128,44 +156,58 @@ export default function Workspace() {
           <Stepper steps={steps} />
         </aside>
 
-        <div className="ws-inputs">
-          <InputSections form={form} errors={errors} set={set} />
-        </div>
+        <form
+          className="ws-inputs"
+          onSubmit={calculate}
+          noValidate
+          aria-label="Career decision inputs"
+        >
+          <InputSections form={form} errors={shownErrors} set={set} />
+          <CalculateBar
+            busy={calc.busy}
+            state={latest === null ? "none" : stale ? "stale" : "current"}
+          />
+        </form>
 
         <section className="ws-results" aria-labelledby="results-h" aria-live="polite">
           <h2 id="results-h">Result</h2>
 
-          {hasErrors && (
+          {attempted && hasErrors && (
             <p className="notice notice--warn">
-              Fix the highlighted fields to see a result.
+              Fix the highlighted fields, then press Calculate.
             </p>
           )}
-          {comparison.status === "error" && (
+          {calc.error && (
             <p className="notice notice--error" role="alert">
-              {comparison.message}
+              {calc.error}
             </p>
           )}
-          {!result && !hasErrors && engine.phase === "loading" && (
-            <EngineProgress status={engine} />
-          )}
-          {!result && comparison.status === "loading" && engine.phase !== "loading" && (
+          {!latest && engine.phase === "loading" && <EngineProgress status={engine} />}
+          {!latest && !calc.busy && !calc.error && !attempted && <CalculatePrompt />}
+          {!latest && calc.busy && engine.phase !== "loading" && (
             <p className="muted">Calculating…</p>
           )}
 
-          {result && request && (
-            <div className="stack" data-stale={comparison.status !== "success" || hasErrors}>
+          {latest && (
+            <div className="stack" data-stale={stale || calc.busy}>
+              {stale && (
+                <StaleNotice extra="PDF download and link sharing are paused until then." />
+              )}
               <ResultSummary
-                summary={result.summary}
-                horizonMonths={request.horizon_months}
-                sample={isSample(form)}
+                summary={latest.data.summary}
+                horizonMonths={latest.request.horizon_months}
+                sample={latest.key === SAMPLE_KEY}
               />
-              <CashflowChart months={result.months} />
-              {freshResult && <ReportDownload request={request} result={freshResult} />}
+              <CashflowChart months={latest.data.months} />
+              {isCurrent && <ReportDownload request={latest.request} result={latest.data} />}
               <Disclosure title="Year by year" hint="income, costs and savings" defaultOpen>
-                <AnnualTables stay={result.stay_annual} switchRows={result.switch_annual} />
+                <AnnualTables
+                  stay={latest.data.stay_annual}
+                  switchRows={latest.data.switch_annual}
+                />
               </Disclosure>
               <Disclosure title="Monthly cash flow" hint="every month in detail">
-                <MonthlyTable months={result.months} />
+                <MonthlyTable months={latest.data.months} />
               </Disclosure>
               <Disclosure
                 title="How sensitive is this result?"

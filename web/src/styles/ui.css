@@ -207,3 +207,28 @@ table.data thead th {
   font-weight: 600;
   font-size: var(--text-xs);
 }
+
+/* ---------- Explicit calculate ---------- */
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.btn:disabled:hover .arrow {
+  transform: none;
+}
+.spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: var(--s-2);
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  vertical-align: -0.15em;
+  animation: spin 0.75s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

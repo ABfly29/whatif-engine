@@ -39,8 +39,15 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+const calculate = (user: ReturnType<typeof userEvent.setup>) =>
+  user.click(screen.getByRole("button", { name: "Calculate" }));
+
+// Nothing is calculated on load or while typing, so each test presses Calculate itself.
 const open = async () => {
+  const user = userEvent.setup();
   renderAt("/expenses");
+  await screen.findByRole("button", { name: "Calculate" }, { timeout: 10_000 });
+  await calculate(user);
   await screen.findByRole("table", { name: "Monthly picture" }, { timeout: 10_000 });
 };
 const row = (table: HTMLElement, label: string) =>
@@ -142,25 +149,135 @@ describe("major expense page", () => {
     expect(screen.getByLabelText("Down payment")).toBeInTheDocument();
     await user.click(screen.getByRole("radio", { name: "Pay in cash" }));
     expect(screen.queryByLabelText("Down payment")).toBeNull();
-    await waitFor(
-      () => expect(vi.mocked(simulateExpense).mock.calls.at(-1)![0].payment_method).toBe("cash"),
-      { timeout: 5000 },
-    );
+    // Changing the payment method does not recalculate by itself.
+    expect(simulateExpense).toHaveBeenCalledTimes(1);
+    await calculate(user);
+    await waitFor(() => expect(simulateExpense).toHaveBeenCalledTimes(2));
+    expect(vi.mocked(simulateExpense).mock.calls.at(-1)![0].payment_method).toBe("cash");
   });
 
   it("asks for a fix instead of calculating from invalid input", async () => {
     const user = userEvent.setup();
     await open();
     await user.clear(screen.getByLabelText("On-road price"));
-    expect(screen.getByText("Fix the highlighted fields to see a result.")).toBeInTheDocument();
+    await calculate(user);
+    expect(screen.getByText("Fix the highlighted fields, then press Calculate.")).toBeInTheDocument();
     expect(screen.getByText("Enter the on-road price.")).toBeInTheDocument();
+    expect(simulateExpense).toHaveBeenCalledTimes(1); // only the first, valid calculation
   });
 
   it("reports an engine error", async () => {
     vi.mocked(simulateExpense).mockReset().mockImplementation(
       () => new Promise((_, reject) => setTimeout(() => reject(new Error("Engine said no.")), 0)),
     );
+    const user = userEvent.setup();
     renderAt("/expenses");
+    await user.click(await screen.findByRole("button", { name: "Calculate" }, { timeout: 10_000 }));
     expect(await screen.findByRole("alert", {}, { timeout: 10_000 })).toHaveTextContent("Engine said no.");
+    expect(screen.getByRole("button", { name: "Calculate" })).toBeEnabled();
+  });
+});
+
+describe("explicit calculation", () => {
+  const start = async () => {
+    const user = userEvent.setup();
+    renderAt("/expenses");
+    await screen.findByRole("button", { name: "Calculate" }, { timeout: 10_000 });
+    return user;
+  };
+
+  it("shows the form and a prompt on first visit, and calculates nothing", async () => {
+    await start();
+    expect(screen.getByText(/Ready when you are/)).toBeInTheDocument();
+    expect(screen.getByText(/Nothing is calculated until you press Calculate/)).toBeInTheDocument();
+    await new Promise((r) => setTimeout(r, 450));
+    expect(simulateExpense).not.toHaveBeenCalled();
+    expect(screen.queryByRole("table", { name: "Monthly picture" })).toBeNull();
+  });
+
+  it("makes no request while typing, then sends the latest values exactly once", async () => {
+    const user = await start();
+    const price = screen.getByLabelText("On-road price");
+    await user.clear(price);
+    await user.type(price, "1500000");
+    const delay = screen.getByLabelText("Delay the purchase by");
+    await user.clear(delay);
+    await user.type(delay, "18");
+    await user.click(screen.getByRole("radio", { name: "5 years" }));
+    await new Promise((r) => setTimeout(r, 450));
+    expect(simulateExpense).not.toHaveBeenCalled();
+
+    await calculate(user);
+    await screen.findByRole("table", { name: "Monthly picture" });
+    expect(simulateExpense).toHaveBeenCalledTimes(1);
+    const sent = vi.mocked(simulateExpense).mock.calls[0][0];
+    expect(sent.purchase_price).toBe("1500000");
+    expect(sent.delay_months).toBe(18);
+    expect(sent.horizon_years).toBe(5);
+  });
+
+  it("submits with the Enter key", async () => {
+    const user = await start();
+    const fuel = screen.getByLabelText("Fuel / month");
+    await user.clear(fuel);
+    await user.type(fuel, "7500{Enter}");
+    await screen.findByRole("table", { name: "Monthly picture" });
+    expect(simulateExpense).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(simulateExpense).mock.calls[0][0].fuel).toBe("7500");
+  });
+
+  it("disables the button while calculating and ignores repeat presses", async () => {
+    let finish!: (r: ExpenseResponse) => void;
+    vi.mocked(simulateExpense).mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    const user = await start();
+    await user.dblClick(screen.getByRole("button", { name: "Calculate" }));
+    const busy = await screen.findByRole("button", { name: "Calculating…" });
+    expect(busy).toBeDisabled();
+    await user.keyboard("{Enter}");
+    expect(simulateExpense).toHaveBeenCalledTimes(1);
+    finish(RESPONSE);
+    await screen.findByRole("table", { name: "Monthly picture" });
+    expect(screen.getByRole("button", { name: "Calculate" })).toBeEnabled();
+  });
+
+  it("blocks an invalid submission with field errors and no request", async () => {
+    const user = await start();
+    await user.clear(screen.getByLabelText("On-road price"));
+    await user.clear(screen.getByLabelText("Monthly take-home salary"));
+    expect(screen.queryByText("Enter the on-road price.")).toBeNull(); // not flagged while typing
+    await calculate(user);
+    expect(screen.getByText("Enter the on-road price.")).toBeInTheDocument();
+    expect(screen.getByText("Enter your monthly take-home pay.")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByLabelText("Monthly take-home salary")).toHaveFocus());
+    expect(simulateExpense).not.toHaveBeenCalled();
+  });
+
+  it("keeps the last result visible but marked out of date after an edit", async () => {
+    const user = await start();
+    await calculate(user);
+    await screen.findByRole("table", { name: "Monthly picture" });
+    expect(screen.queryByText(/These results are out of date/)).toBeNull();
+
+    await user.type(screen.getByLabelText("On-road price"), "0");
+    expect(await screen.findByText(/These results are out of date/)).toBeInTheDocument();
+    expect(screen.getByRole("table", { name: "Monthly picture" })).toBeInTheDocument();
+    expect(document.querySelector(".stack")).toHaveAttribute("data-stale", "true");
+    expect(simulateExpense).toHaveBeenCalledTimes(1);
+
+    await calculate(user);
+    await waitFor(() => expect(simulateExpense).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.queryByText(/These results are out of date/)).toBeNull());
+  });
+
+  it("labels the old result by the request it was calculated from, not the edited form", async () => {
+    const user = await start();
+    await calculate(user);
+    await screen.findByRole("table", { name: "Monthly picture" });
+    expect(screen.getAllByText("Buy in 12 months").length).toBeGreaterThan(0);
+    const delay = screen.getByLabelText("Delay the purchase by");
+    await user.clear(delay);
+    await user.type(delay, "30");
+    expect(screen.getAllByText("Buy in 12 months").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Buy in 30 months")).toBeNull();
   });
 });

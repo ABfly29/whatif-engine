@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore, type FormEvent } from "react";
 import { simulateExpense, warmCalculator } from "../lib/api";
 import { getEngineStatus, subscribeEngineStatus } from "../lib/engineClient";
 import {
@@ -9,11 +9,17 @@ import {
   validateExpense,
   type ExpenseForm,
 } from "../lib/expenseForm";
-import { useApiQuery } from "../lib/useApiQuery";
+import type { ExpenseRequest, ExpenseResponse } from "../lib/types";
+import { useCalculation } from "../lib/useCalculation";
 import { Button } from "../components/ui/Button";
 import { Disclosure } from "../components/ui/Disclosure";
 import { ExpenseAssumptions, ExpenseResults } from "../components/expenses/ExpenseResults";
 import { ExpenseInputs } from "../components/expenses/ExpenseInputs";
+import {
+  CalculateBar,
+  CalculatePrompt,
+  StaleNotice,
+} from "../components/workspace/CalculateBar";
 import { EngineProgress } from "../components/workspace/EngineProgress";
 
 export default function Expenses() {
@@ -25,16 +31,37 @@ export default function Expenses() {
   const hasErrors = Object.keys(errors).length > 0;
   const request = useMemo(() => (hasErrors ? null : toExpenseRequest(form)), [form, hasErrors]);
   const key = request ? JSON.stringify(request) : null;
-  const simulation = useApiQuery(key, (s) => simulateExpense(request!, s));
+
+  // Field errors appear once someone has tried to calculate, then follow their edits.
+  const [attempted, setAttempted] = useState(false);
+  const [focusErrors, setFocusErrors] = useState(0);
+  const shownErrors = attempted ? errors : {};
+
+  // Calculation happens only on submit. Editing the form never reaches the engine.
+  const calc = useCalculation<ExpenseRequest, ExpenseResponse>((r, signal) =>
+    simulateExpense(r, signal),
+  );
+  const latest = calc.latest;
+  const isCurrent = latest !== null && latest.key === key;
+  const stale = latest !== null && !isCurrent;
+
+  const calculate = (event?: FormEvent) => {
+    event?.preventDefault();
+    if (calc.busy) return;
+    setAttempted(true);
+    if (!request) {
+      setFocusErrors((n) => n + 1);
+      return;
+    }
+    calc.submit(request);
+  };
+
+  useEffect(() => {
+    if (focusErrors === 0) return;
+    document.querySelector<HTMLElement>('.ws-inputs [aria-invalid="true"]')?.focus();
+  }, [focusErrors]);
 
   const set = (k: keyof ExpenseForm, v: string) => setForm((f) => ({ ...f, [k]: v }));
-
-  const result =
-    simulation.status === "success"
-      ? simulation.data
-      : simulation.status === "loading" || simulation.status === "error"
-        ? simulation.previous
-        : undefined;
 
   return (
     <div className="workspace container">
@@ -63,31 +90,45 @@ export default function Expenses() {
       </header>
 
       <div className="ws-layout">
-        <div className="ws-inputs">
-          <ExpenseInputs form={form} errors={errors} set={set} />
-        </div>
+        <form
+          className="ws-inputs"
+          onSubmit={calculate}
+          noValidate
+          aria-label="Major expense inputs"
+        >
+          <ExpenseInputs form={form} errors={shownErrors} set={set} />
+          <CalculateBar
+            busy={calc.busy}
+            state={latest === null ? "none" : stale ? "stale" : "current"}
+          />
+        </form>
 
         <section className="ws-results" aria-labelledby="results-h" aria-live="polite">
           <h2 id="results-h">Result</h2>
 
-          {hasErrors && (
-            <p className="notice notice--warn">Fix the highlighted fields to see a result.</p>
-          )}
-          {simulation.status === "error" && (
-            <p className="notice notice--error" role="alert">
-              {simulation.message}
+          {attempted && hasErrors && (
+            <p className="notice notice--warn">
+              Fix the highlighted fields, then press Calculate.
             </p>
           )}
-          {!result && !hasErrors && engine.phase === "loading" && <EngineProgress status={engine} />}
-          {!result && simulation.status === "loading" && engine.phase !== "loading" && (
+          {calc.error && (
+            <p className="notice notice--error" role="alert">
+              {calc.error}
+            </p>
+          )}
+          {!latest && engine.phase === "loading" && <EngineProgress status={engine} />}
+          {!latest && !calc.busy && !calc.error && !attempted && <CalculatePrompt />}
+          {!latest && calc.busy && engine.phase !== "loading" && (
             <p className="muted">Calculating…</p>
           )}
 
-          {result && request && (
-            <div className="stack" data-stale={simulation.status !== "success" || hasErrors}>
-              <ExpenseResults data={result} request={request} />
+          {latest && (
+            <div className="stack" data-stale={stale || calc.busy}>
+              {stale && <StaleNotice />}
+              {/* Labels and figures come from the request that was calculated, not the form. */}
+              <ExpenseResults data={latest.data} request={latest.request} />
               <Disclosure title="Assumptions and limitations" defaultOpen>
-                <ExpenseAssumptions request={request} />
+                <ExpenseAssumptions request={latest.request} />
               </Disclosure>
             </div>
           )}

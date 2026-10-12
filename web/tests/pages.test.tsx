@@ -88,6 +88,10 @@ function renderAt(path: string) {
 // Section <header>s also map to the banner role in jsdom, so target the site bar.
 const siteHeader = () => document.querySelector(".site-header") as HTMLElement;
 
+// Nothing is calculated until this is pressed.
+const calculate = (user: ReturnType<typeof userEvent.setup>) =>
+  user.click(screen.getByRole("button", { name: "Calculate" }));
+
 beforeEach(() => {
   reportCalls = [];
   // The calculator warms the engine on mount; give it a fake worker.
@@ -294,52 +298,137 @@ describe("header and footer", () => {
 });
 
 describe("decision workspace", () => {
-  it("labels sample data and renders engine results", async () => {
+  it("opens with the sample inputs and a prompt, and does not calculate by itself", async () => {
     renderAt("/app");
     expect(await screen.findByText(/sample numbers, not yours/i)).toBeInTheDocument();
+    expect(screen.getByText(/Ready when you are/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Calculate" })).toBeEnabled();
+    // Give any stray automatic request time to show up before asserting there is none.
+    await new Promise((r) => setTimeout(r, 450));
+    expect(compareCareer).not.toHaveBeenCalled();
+    expect(screen.queryByText(/better off/)).not.toBeInTheDocument();
+  });
+
+  it("labels sample data and renders engine results when Calculate is pressed", async () => {
+    const user = userEvent.setup();
+    renderAt("/app");
+    await screen.findByText(/sample numbers, not yours/i);
+    await calculate(user);
     expect(await screen.findByText(/₹2,50,000 better off/)).toBeInTheDocument();
     expect(screen.getByText("Month 9")).toBeInTheDocument();
     expect(screen.getByText(/drops below zero in month 2/)).toBeInTheDocument();
     expect(compareCareer).toHaveBeenCalledTimes(1);
   });
 
-  it("sends the edited value to the API after the user types", async () => {
+  it("does not call the API while typing, and sends the latest values once on Calculate", async () => {
     const user = userEvent.setup();
     renderAt("/app");
-    await screen.findByText(/better off/);
-    const pay = screen.getAllByLabelText("Annual take-home pay")[1];
+    const pay = (await screen.findAllByLabelText("Annual take-home pay"))[1];
     await user.clear(pay);
     await user.type(pay, "2000000");
-    await waitFor(() => {
-      const last = vi.mocked(compareCareer).mock.calls.at(-1)![0];
-      expect(last.new_job.annual_take_home).toBe("2000000");
-    });
+    await user.clear(screen.getAllByLabelText("Annual take-home pay")[0]);
+    await user.type(screen.getAllByLabelText("Annual take-home pay")[0], "950000");
+    await new Promise((r) => setTimeout(r, 450));
+    expect(compareCareer).not.toHaveBeenCalled();
+
+    await calculate(user);
+    await screen.findByText(/better off/);
+    expect(compareCareer).toHaveBeenCalledTimes(1);
+    const sent = vi.mocked(compareCareer).mock.calls[0][0];
+    expect(sent.new_job.annual_take_home).toBe("2000000");
+    expect(sent.current_job.annual_take_home).toBe("950000");
   });
 
-  it("blocks the request and explains when required pay is missing", async () => {
+  it("submits with the Enter key from an input", async () => {
     const user = userEvent.setup();
     renderAt("/app");
+    const pay = (await screen.findAllByLabelText("Annual take-home pay"))[1];
+    await user.clear(pay);
+    await user.type(pay, "1750000{Enter}");
     await screen.findByText(/better off/);
-    vi.mocked(compareCareer).mockClear();
+    expect(compareCareer).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(compareCareer).mock.calls[0][0].new_job.annual_take_home).toBe("1750000");
+  });
+
+  it("disables the button and shows progress while calculating, and ignores a second press", async () => {
+    const user = userEvent.setup();
+    let finish!: (r: CareerResponse) => void;
+    vi.mocked(compareCareer).mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    renderAt("/app");
+    await screen.findByText(/sample numbers, not yours/i);
+    const button = screen.getByRole("button", { name: "Calculate" });
+    await user.dblClick(button);
+    const busy = await screen.findByRole("button", { name: "Calculating…" });
+    expect(busy).toBeDisabled();
+    expect(busy).toHaveAttribute("aria-busy", "true");
+    await user.click(busy);
+    await user.keyboard("{Enter}");
+    expect(compareCareer).toHaveBeenCalledTimes(1);
+    finish(FIXTURE);
+    expect(await screen.findByText(/better off/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Calculate" })).toBeEnabled();
+  });
+
+  it("blocks the request and shows field errors when required pay is missing", async () => {
+    const user = userEvent.setup();
+    renderAt("/app");
+    await screen.findByText(/sample numbers, not yours/i);
     await user.click(screen.getByRole("button", { name: "Clear all" }));
+    // Nothing is flagged until someone tries to calculate.
+    expect(screen.queryByText(/Enter your current take-home pay/)).not.toBeInTheDocument();
+    await calculate(user);
     expect(await screen.findByText(/Enter your current take-home pay/)).toBeInTheDocument();
     expect(screen.getByText(/Fix the highlighted fields/)).toBeInTheDocument();
     expect(screen.queryByText(/better off/)).not.toBeInTheDocument();
+    // Focus moves to the first field that needs fixing.
+    await waitFor(() =>
+      expect(screen.getAllByLabelText("Annual take-home pay")[0]).toHaveFocus(),
+    );
     await new Promise((r) => setTimeout(r, 450));
     expect(compareCareer).not.toHaveBeenCalled();
   });
 
-  it("shows API errors instead of failing silently", async () => {
+  it("keeps the previous result visible but marked out of date after an edit", async () => {
+    const user = userEvent.setup();
+    renderAt("/app");
+    await screen.findByText(/sample numbers, not yours/i);
+    await calculate(user);
+    await screen.findByText(/₹2,50,000 better off/);
+    expect(screen.queryByText(/These results are out of date/)).not.toBeInTheDocument();
+
+    await user.type(screen.getAllByLabelText("Annual take-home pay")[1], "0");
+    expect(await screen.findByText(/These results are out of date/)).toBeInTheDocument();
+    // The old figures stay readable, and nothing was requested.
+    expect(screen.getByText(/₹2,50,000 better off/)).toBeInTheDocument();
+    expect(compareCareer).toHaveBeenCalledTimes(1);
+    expect(document.querySelector(".stack")).toHaveAttribute("data-stale", "true");
+
+    // Recalculating clears the warning and uses the new value.
+    await calculate(user);
+    await waitFor(() => expect(compareCareer).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(screen.queryByText(/These results are out of date/)).not.toBeInTheDocument(),
+    );
+    expect(vi.mocked(compareCareer).mock.calls[1][0].new_job.annual_take_home).toBe("16000000");
+  });
+
+  it("shows API errors instead of failing silently, keeping the form usable", async () => {
+    const user = userEvent.setup();
     vi.mocked(compareCareer).mockRejectedValue(
       new Error("Could not reach the calculation service."),
     );
     renderAt("/app");
+    await screen.findByText(/sample numbers, not yours/i);
+    await calculate(user);
     expect(await screen.findByRole("alert")).toHaveTextContent(/calculation service/);
+    expect(screen.getByRole("button", { name: "Calculate" })).toBeEnabled();
   });
 
   it("loads sensitivity only when the section is opened", async () => {
     const user = userEvent.setup();
     renderAt("/app");
+    await screen.findByText(/sample numbers, not yours/i);
+    await calculate(user);
     await screen.findByText(/better off/);
     expect(careerSensitivity).not.toHaveBeenCalled();
     await user.click(screen.getByText(/How sensitive is this result/));
@@ -347,6 +436,19 @@ describe("decision workspace", () => {
     expect(
       await screen.findByRole("region", { name: /Sensitivity analysis/ }),
     ).toBeInTheDocument();
+  });
+
+  it("does not re-run sensitivity while the inputs are edited", async () => {
+    const user = userEvent.setup();
+    renderAt("/app");
+    await screen.findByText(/sample numbers, not yours/i);
+    await calculate(user);
+    await screen.findByText(/better off/);
+    await user.click(screen.getByText(/How sensitive is this result/));
+    await waitFor(() => expect(careerSensitivity).toHaveBeenCalledTimes(1));
+    await user.type(screen.getAllByLabelText("Annual take-home pay")[1], "5");
+    await new Promise((r) => setTimeout(r, 450));
+    expect(careerSensitivity).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -401,9 +503,14 @@ describe("engine warm-up and progress", () => {
 });
 
 describe("shareable links", () => {
-  it("opens a shared scenario from the link instead of the sample", async () => {
+  it("opens a shared scenario from the link, and calculates it only when asked", async () => {
+    const user = userEvent.setup();
     renderAt("/app?curPay=900000&newPay=2000000&gap=2");
-    await waitFor(() => expect(compareCareer).toHaveBeenCalled());
+    await screen.findByText(/Ready when you are/);
+    await new Promise((r) => setTimeout(r, 450));
+    expect(compareCareer).not.toHaveBeenCalled();
+    await calculate(user);
+    await waitFor(() => expect(compareCareer).toHaveBeenCalledTimes(1));
     const req = vi.mocked(compareCareer).mock.calls.at(-1)![0];
     expect(req.current_job.annual_take_home).toBe("900000");
     expect(req.new_job.annual_take_home).toBe("2000000");
@@ -418,7 +525,20 @@ describe("shareable links", () => {
     expect(await screen.findByText(/sample numbers, not yours/i)).toBeInTheDocument();
   });
 
-  it("copies a link that reopens the current scenario", async () => {
+  it("cannot share until the result matches the inputs", async () => {
+    const user = userEvent.setup();
+    renderAt("/app");
+    const share = await screen.findByRole("button", { name: "Copy link to this scenario" });
+    expect(share).toBeDisabled();
+    expect(screen.getByText(/Calculate first/)).toBeInTheDocument();
+    await calculate(user);
+    await screen.findByText(/better off/);
+    await waitFor(() => expect(share).toBeEnabled());
+    await user.type(screen.getAllByLabelText("Annual take-home pay")[0], "0");
+    expect(share).toBeDisabled();
+  });
+
+  it("copies a link that reopens the calculated scenario", async () => {
     const user = userEvent.setup();
     const writeText = vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
@@ -426,6 +546,8 @@ describe("shareable links", () => {
     const pay = (await screen.findAllByLabelText("Annual take-home pay"))[0];
     await user.clear(pay);
     await user.type(pay, "875000");
+    await calculate(user);
+    await screen.findByText(/better off/);
     await user.click(screen.getByRole("button", { name: "Copy link to this scenario" }));
     expect(writeText).toHaveBeenCalledOnce();
     const link = new URL(writeText.mock.calls[0][0]);
@@ -441,6 +563,9 @@ describe("shareable links", () => {
       clipboard: { writeText: vi.fn().mockRejectedValue(new Error("denied")) },
     });
     renderAt("/app");
+    await screen.findByText(/sample numbers, not yours/i);
+    await calculate(user);
+    await screen.findByText(/better off/);
     await user.click(await screen.findByRole("button", { name: "Copy link to this scenario" }));
     const field = await screen.findByLabelText("Link to this scenario");
     expect((field as HTMLInputElement).value).toContain("#/app");
@@ -460,10 +585,16 @@ describe("shareable links", () => {
 
 describe("PDF report button in the calculator", () => {
   const reportButton = () => screen.queryByRole("button", { name: "Download PDF Report" });
+  const calculated = async (user: ReturnType<typeof userEvent.setup>) => {
+    await screen.findByText(/sample numbers, not yours/i);
+    await calculate(user);
+    return screen.findByRole("button", { name: "Download PDF Report" });
+  };
 
   it("appears below the results after a successful calculation", async () => {
+    const user = userEvent.setup();
     renderAt("/app");
-    const button = await screen.findByRole("button", { name: "Download PDF Report" });
+    const button = await calculated(user);
     // It sits after the headline numbers and chart, inside the results column.
     const results = document.querySelector(".ws-results")!;
     expect(results).toContainElement(button);
@@ -471,48 +602,53 @@ describe("PDF report button in the calculator", () => {
     expect(verdict.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("is not shown before there is a result", async () => {
-    vi.mocked(compareCareer).mockReturnValue(new Promise(() => {}));
+  it("is not shown before anything has been calculated", async () => {
     renderAt("/app");
-    await screen.findByText(/Downloading the calculation engine/);
+    await screen.findByText(/Ready when you are/);
     expect(reportButton()).toBeNull();
   });
 
   it("is not shown when the inputs are invalid", async () => {
     const user = userEvent.setup();
     renderAt("/app");
-    await screen.findByRole("button", { name: "Download PDF Report" });
+    await calculated(user);
     await user.click(screen.getByRole("button", { name: "Clear all" }));
+    await calculate(user);
     await screen.findByText(/Fix the highlighted fields/);
+    // The old result is out of date, so it cannot be exported either.
     expect(reportButton()).toBeNull();
   });
 
-  it("is not shown when the calculation fails", async () => {
+  it("is not shown when the first calculation fails", async () => {
+    const user = userEvent.setup();
     vi.mocked(compareCareer).mockRejectedValue(new Error("Could not reach the calculation service."));
     renderAt("/app");
+    await screen.findByText(/sample numbers, not yours/i);
+    await calculate(user);
     await screen.findByRole("alert");
     expect(reportButton()).toBeNull();
   });
 
-  it("hides while the shown result is out of date, and returns with the new one", async () => {
+  it("cannot export a stale result: hidden as soon as an input changes, back after recalculating", async () => {
     const user = userEvent.setup();
     renderAt("/app");
-    await screen.findByRole("button", { name: "Download PDF Report" });
-    const pay = screen.getAllByLabelText("Annual take-home pay")[1];
-    await user.type(pay, "0");
-    // The old result is still on screen for the debounce delay, but it no longer
-    // matches the inputs, so a report built now would mix new inputs with old results.
+    await calculated(user);
+    await user.type(screen.getAllByLabelText("Annual take-home pay")[1], "0");
+    // The old result is still on screen, but a report built now would mix the
+    // new inputs with the old result.
     expect(reportButton()).toBeNull();
+    expect(screen.getByText(/PDF download and link sharing are paused/)).toBeInTheDocument();
+    await calculate(user);
     expect(await screen.findByRole("button", { name: "Download PDF Report" })).toBeInTheDocument();
   });
 
-  it("generates the report from the inputs on screen and the engine's result", async () => {
+  it("generates the report from the inputs that were calculated and the engine's result", async () => {
     const user = userEvent.setup();
     renderAt("/app");
     const pay = (await screen.findAllByLabelText("Annual take-home pay"))[1];
     await user.clear(pay);
     await user.type(pay, "2100000");
-    await waitFor(() => expect(vi.mocked(compareCareer).mock.calls.at(-1)![0].new_job.annual_take_home).toBe("2100000"));
+    await calculate(user);
     await user.click(await screen.findByRole("button", { name: "Download PDF Report" }));
 
     await waitFor(() => expect(reportCalls).toHaveLength(1));
