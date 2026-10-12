@@ -5,16 +5,16 @@ import { Card } from "../components/ui/Card";
 
 const STEPS = [
   {
-    title: "Enter your situation",
-    body: "Take-home pay for both jobs, monthly costs, savings, and any gap, relocation or bonuses. We start you with clearly marked sample numbers.",
+    title: "Define your decision",
+    body: "Choose a scenario, from switching jobs to buying a car. Enter your financial situation and adjust the relevant assumptions.",
   },
   {
-    title: "Compare both paths",
-    body: "A deterministic engine projects your cash month by month under each choice, then shows the difference and when, if ever, switching catches up.",
+    title: "Compare the outcomes",
+    body: "See how each option affects your monthly cash flow, savings, costs, and projected financial position over time.",
   },
   {
-    title: "Stress-test the assumptions",
-    body: "Change pay growth, inflation or the length of a gap and see how the answer moves. Nothing is hidden behind a score.",
+    title: "Challenge the assumptions",
+    body: "Change key variables, explore alternative scenarios, and understand what drives the results. No hidden scores or black-box recommendations.",
   },
 ];
 
@@ -60,7 +60,7 @@ export default function Landing() {
           <SectionHead
             id="how-h"
             eyebrow="How it works"
-            title="From a gut feeling to a clear comparison"
+            title="From a big decision to a clearer financial future"
           />
           <ol className="steps">
             {STEPS.map((s, i) => (

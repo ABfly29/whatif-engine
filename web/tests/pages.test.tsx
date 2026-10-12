@@ -154,10 +154,38 @@ describe("landing page", () => {
     expect(screen.getByRole("img", { name: /Switch path dips below Stay/ })).toBeInTheDocument();
   });
 
+  it("describes how the whole product works, in three steps that suit either calculator", () => {
+    renderAt("/");
+    const section = document.getElementById("how")!;
+    expect(within(section).getByText("How it works")).toHaveClass("eyebrow");
+    const steps = within(section).getAllByRole("listitem");
+    expect(steps).toHaveLength(3);
+    const copy = steps.map((li) => [
+      within(li).getByRole("heading", { level: 3 }).textContent,
+      li.querySelector("p")!.textContent,
+    ]);
+    expect(copy).toEqual([
+      [
+        "Define your decision",
+        "Choose a scenario, from switching jobs to buying a car. Enter your financial situation and adjust the relevant assumptions.",
+      ],
+      [
+        "Compare the outcomes",
+        "See how each option affects your monthly cash flow, savings, costs, and projected financial position over time.",
+      ],
+      [
+        "Challenge the assumptions",
+        "Change key variables, explore alternative scenarios, and understand what drives the results. No hidden scores or black-box recommendations.",
+      ],
+    ]);
+    // The numbered markers keep their place.
+    expect([...section.querySelectorAll(".steps__n")].map((n) => n.textContent)).toEqual(["1", "2", "3"]);
+  });
+
   it("has the required sections and marks future categories as coming soon", () => {
     renderAt("/");
     for (const name of [
-      "From a gut feeling to a clear comparison",
+      "From a big decision to a clearer financial future",
       "Start with a career move",
       "Clear about what this is, and what it is not",
       "Ready to compare your options?",
